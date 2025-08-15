@@ -30,6 +30,9 @@ public class RoomClass extends BaseEntity {
     @Column(name = "room_class_name", nullable = false)
     private String roomClassName;
 
+    @Column(name = "quantity", nullable = false)
+    private String quantity;
+
     @Column(name = "price_original", precision = 10, scale = 2)
     private BigDecimal priceOriginal;
 

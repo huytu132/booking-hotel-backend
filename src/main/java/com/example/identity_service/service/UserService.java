@@ -8,6 +8,7 @@ import com.example.identity_service.enums.EnumRole;
 import com.example.identity_service.exception.AppException;
 import com.example.identity_service.exception.ErrorCode;
 import com.example.identity_service.mapper.UserMapper;
+import com.example.identity_service.repository.RoleRepository;
 import com.example.identity_service.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -15,6 +16,8 @@ import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
+import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
@@ -27,19 +30,25 @@ public class UserService {
     private final UserRepository userRepository;
     private final UserMapper userMapper;
     private final PasswordEncoder passwordEncoder;
+    private final RoleRepository roleRepository;
 
     public UserResponse createRequest(UserCreationRequest request){
-        if (userRepository.existsByEmail(request.getUsername())){
+        if (userRepository.existsByEmail(request.getEmail())){
             throw new AppException(ErrorCode.USER_EXISTED);
         }
 
         User user = userMapper.toUser(request);
         user.setPassword(passwordEncoder.encode(request.getPassword()));
+        user.setLastName(request.getLastName());
+        user.setFirstName(request.getFirstName());
+        user.setPhoneNo(request.getPhoneNo());
+        user.setCreateAt(LocalDateTime.now());
 
-        Set<String> roles = new HashSet<>();
-        roles.add(EnumRole.USER.name());
+        var roles = roleRepository.findAllById(request.getRoles());
 
-        user.setRoles(roles);
+        user.setRoles(new HashSet<>(roles));
+
+//        user.setRoles(roles);
 
         return userMapper.toUserResponse(userRepository.save(user));
     }

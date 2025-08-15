@@ -53,7 +53,7 @@ public class AuthenticationService {
         Date expiryTime = signedJWT.getJWTClaimsSet().getExpirationTime();
 
         return IntrospectResponse.builder()
-                .vaid(verified && expiryTime.after(new Date()))
+                .valid(verified && expiryTime.after(new Date()))
                 .build();
     }
 
@@ -101,7 +101,9 @@ public class AuthenticationService {
     private String buildScope(User user){
         StringJoiner stringJoiner = new StringJoiner(" ");
         if (!CollectionUtils.isEmpty(user.getRoles())){
-            user.getRoles().forEach(stringJoiner::add);
+            user.getRoles().forEach(role -> {
+                stringJoiner.add(role.getName());
+            });
         }
         return stringJoiner.toString();
     }

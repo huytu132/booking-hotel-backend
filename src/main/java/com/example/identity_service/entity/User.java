@@ -54,5 +54,6 @@ public class User extends BaseEntity {
     private String phoneNo;
 
     @Column(name = "roles")
-    private Set<String> roles = new HashSet<>();
+    @ManyToMany
+    private Set<Role> roles;
 }

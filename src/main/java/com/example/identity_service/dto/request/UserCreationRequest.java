@@ -1,10 +1,14 @@
 package com.example.identity_service.dto.request;
 
+import jakarta.persistence.Column;
+import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.Size;
 import lombok.*;
 import lombok.experimental.FieldDefaults;
+import org.hibernate.annotations.Nationalized;
 
 import java.time.LocalDate;
+import java.util.List;
 
 @Data
 @NoArgsConstructor
@@ -12,11 +16,13 @@ import java.time.LocalDate;
 @Builder
 @FieldDefaults(level = AccessLevel.PRIVATE)
 public class UserCreationRequest {
-    @Size(min = 3, message = "USERNAME_INVALID")
-    String username;
+    @Email
+    String email;
     @Size(min = 8, message = "INVALID_PASSWORD")
     String password;
     String firstName;
     String lastName;
-    LocalDate dob;
+    String phoneNo;
+
+    List<String> roles;
 }
