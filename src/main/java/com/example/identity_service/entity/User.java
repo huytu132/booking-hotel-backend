@@ -1,16 +1,10 @@
 package com.example.identity_service.entity;
 
 import com.example.identity_service.entity.base.BaseEntity;
-import com.example.identity_service.enums.EnumRole;
-import jakarta.persistence.Entity;
-import jakarta.persistence.GeneratedValue;
-import jakarta.persistence.GenerationType;
-import jakarta.persistence.Id;
-import lombok.*;
-
 import jakarta.persistence.*;
 import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.Size;
+import lombok.*;
 import org.hibernate.annotations.Nationalized;
 
 import java.util.HashSet;
@@ -53,7 +47,12 @@ public class User extends BaseEntity {
     @Column(name = "phone_no", unique = true)
     private String phoneNo;
 
-    @Column(name = "roles")
-    @ManyToMany
-    private Set<Role> roles;
+    @Builder.Default
+    @ManyToMany(fetch = FetchType.EAGER, cascade = CascadeType.MERGE)
+    @JoinTable(
+            name = "user_role",
+            joinColumns = @JoinColumn(name = "user_id"),
+            inverseJoinColumns = @JoinColumn(name = "role_name")
+    )
+    private Set<Role> roles = new HashSet<>();
 }

@@ -38,6 +38,9 @@ public class Hotel extends BaseEntity {
     @Column(name = "description")
     private String description;
 
+    @Column(name = "image_url")
+    private String imageUrl;
+
     @OneToMany(mappedBy = "hotel", fetch = FetchType.LAZY, cascade = CascadeType.ALL)
     private List<RoomClass> roomClasses = new ArrayList<>();
 }
