@@ -9,6 +9,7 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestTemplate;
 
+import java.time.LocalDateTime;
 import java.util.Arrays;
 import java.util.Map;
 
@@ -50,24 +51,9 @@ public class GoogleAuthService {
                 userInfoUri + "?access_token=" + accessToken, Map.class);
 
         String email = (String) userInfo.get("email");
-        String name = (String) userInfo.get("name");
+        String firstName = (String) userInfo.get("given_name");
+        String lastName = (String) userInfo.get("family_name");
         String sub = (String) userInfo.get("sub");
-
-        String firstName;
-        String lastName;
-
-        if (name != null && !name.isBlank()) {
-            String[] parts = name.trim().split("\\s+"); // tách theo space
-            firstName = parts[parts.length - 1]; // lấy từ cuối cùng
-            if (parts.length > 1) {
-                lastName = String.join(" ", Arrays.copyOf(parts, parts.length - 1)); // ghép phần trước
-            } else {
-                lastName = "";
-            }
-        } else {
-            lastName = "";
-            firstName = "";
-        }
 
         log.info(userInfo.toString());
 
@@ -82,6 +68,7 @@ public class GoogleAuthService {
                             .provider("GOOGLE")
                             .providerId(sub)
                             .build();
+                    newUser.setCreateAt(LocalDateTime.now());
                     return userRepository.save(newUser);
                 });
 
