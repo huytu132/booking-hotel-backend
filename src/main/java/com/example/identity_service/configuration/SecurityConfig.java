@@ -38,11 +38,17 @@ public class SecurityConfig {
                 .authorizeHttpRequests(auth -> auth
                         .requestMatchers(PUBLIC_ENDPOINTS).permitAll()
                         .requestMatchers(HttpMethod.GET, "/api/hotels/**").permitAll()
+                        .requestMatchers(HttpMethod.GET, "/api/addons/**").permitAll()
 
                         // chỉ ADMIN mới được thêm/sửa/xóa hotel
                         .requestMatchers(HttpMethod.POST, "/api/hotels/**").hasRole("ADMIN")
                         .requestMatchers(HttpMethod.PUT, "/api/hotels/**").hasRole("ADMIN")
                         .requestMatchers(HttpMethod.DELETE, "/api/hotels/**").hasRole("ADMIN")
+
+                        // chỉ ADMIN mới được thêm/sửa/xóa addon
+                        .requestMatchers(HttpMethod.POST, "/api/addons/**").hasRole("ADMIN")
+                        .requestMatchers(HttpMethod.PUT, "/api/addons/**").hasRole("ADMIN")
+                        .requestMatchers(HttpMethod.DELETE, "/api/addons/**").hasRole("ADMIN")
                         .anyRequest().authenticated()
                 )
                 .oauth2ResourceServer(oauth2 -> oauth2.jwt(jwtConfigurer -> jwtConfigurer
