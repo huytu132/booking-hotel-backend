@@ -8,14 +8,18 @@ import com.example.identity_service.dto.response.AuthenticationResponse;
 import com.example.identity_service.dto.response.IntrospectResponse;
 import com.example.identity_service.dto.response.SessionResponse;
 import com.example.identity_service.service.AuthenticationService;
+import com.example.identity_service.service.GoogleAuthService;
 import com.nimbusds.jose.JOSEException;
 import lombok.AccessLevel;
 import lombok.RequiredArgsConstructor;
 import lombok.experimental.FieldDefaults;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
+import org.springframework.security.oauth2.core.user.OAuth2User;
 import org.springframework.web.bind.annotation.*;
 
 import java.text.ParseException;
 import java.util.List;
+import java.util.Map;
 
 @RestController
 @RequestMapping("/auth")
@@ -23,6 +27,7 @@ import java.util.List;
 @FieldDefaults(level = AccessLevel.PRIVATE, makeFinal = true)
 public class AuthenticationController {
     AuthenticationService authenticationService;
+    GoogleAuthService googleAuthService;
 
     @PostMapping("/login")
     ApiResponse<AuthenticationResponse> authenticate(@RequestBody AuthenticationRequest request){
@@ -65,5 +70,11 @@ public class AuthenticationController {
     @PostMapping("/sessions/revoke-all")
     public void revokeAllSessions(@RequestParam String email) {
         authenticationService.revokeAllSessions(email);
+    }
+
+    @PostMapping("/google")
+    public AuthenticationResponse googleLogin(@RequestBody Map<String, String> body) {
+        String code = body.get("code");
+        return googleAuthService.loginWithGoogle(code);
     }
 }

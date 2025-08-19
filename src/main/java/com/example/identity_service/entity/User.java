@@ -30,7 +30,7 @@ public class User extends BaseEntity {
     private String email;
 
     @Size(max = 100)
-    @Column(name = "password", nullable = false)
+    @Column(name = "password") // Cho phép null nếu đăng nhập bằng OAuth2
     private String password;
 
     @Size(max = 50)
@@ -46,6 +46,12 @@ public class User extends BaseEntity {
     @Size(max = 50)
     @Column(name = "phone_no", unique = true)
     private String phoneNo;
+
+    @Column(name = "provider", length = 20, nullable = false)
+    private String provider; // LOCAL, GOOGLE, FACEBOOK, GITHUB...
+
+    @Column(name = "provider_id")
+    private String providerId; // sub/id từ OAuth provider
 
     @Builder.Default
     @ManyToMany(fetch = FetchType.EAGER, cascade = CascadeType.MERGE)

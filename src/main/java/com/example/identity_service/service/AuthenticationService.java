@@ -7,10 +7,13 @@ import com.example.identity_service.dto.response.AuthenticationResponse;
 import com.example.identity_service.dto.response.IntrospectResponse;
 import com.example.identity_service.dto.response.SessionResponse;
 import com.example.identity_service.entity.RefreshToken;
+import com.example.identity_service.entity.Role;
 import com.example.identity_service.entity.User;
+import com.example.identity_service.enums.EnumRole;
 import com.example.identity_service.exception.AppException;
 import com.example.identity_service.exception.ErrorCode;
 import com.example.identity_service.repository.RefreshTokenRepository;
+import com.example.identity_service.repository.RoleRepository;
 import com.example.identity_service.repository.UserRepository;
 import com.nimbusds.jose.*;
 import com.nimbusds.jose.crypto.MACSigner;
@@ -24,6 +27,7 @@ import lombok.experimental.FieldDefaults;
 import lombok.experimental.NonFinal;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.security.crypto.password.PasswordEncoder;
+import org.springframework.security.oauth2.core.user.OAuth2User;
 import org.springframework.stereotype.Service;
 import org.springframework.util.CollectionUtils;
 import org.springframework.web.context.request.RequestContextHolder;
@@ -33,10 +37,7 @@ import java.security.SecureRandom;
 import java.text.ParseException;
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
-import java.util.Base64;
-import java.util.Date;
-import java.util.List;
-import java.util.StringJoiner;
+import java.util.*;
 import java.util.stream.Collectors;
 
 @Service
@@ -46,6 +47,7 @@ public class AuthenticationService {
     UserRepository userRepository;
     RefreshTokenRepository refreshTokenRepository;
     PasswordEncoder passwordEncoder;
+    RoleRepository roleRepository;
 
     @NonFinal
     @Value("${jwt.signerKey}")
@@ -72,7 +74,7 @@ public class AuthenticationService {
     }
 
     // Sinh access token (giữ nguyên)
-    private String generateToken(User user) {
+    public String generateToken(User user) {
         JWSHeader jwsHeader = new JWSHeader(JWSAlgorithm.HS512);
         JWTClaimsSet jwtClaimsSet = new JWTClaimsSet.Builder()
                 .subject(user.getEmail())
@@ -94,7 +96,7 @@ public class AuthenticationService {
     }
 
     // Sinh refresh token
-    private RefreshToken generateRefreshToken(User user) {
+    public RefreshToken generateRefreshToken(User user) {
         byte[] randomBytes = new byte[32];
         new SecureRandom().nextBytes(randomBytes);
         String refreshToken = Base64.getUrlEncoder().encodeToString(randomBytes);
@@ -191,6 +193,38 @@ public class AuthenticationService {
 
         return IntrospectResponse.builder()
                 .valid(verified && expiryTime.after(new Date()))
+                .build();
+    }
+
+    public AuthenticationResponse handleOAuth2Login(OAuth2User oAuth2User) {
+        // Lấy thông tin từ Google
+        String email = oAuth2User.getAttribute("email");
+        String name = oAuth2User.getAttribute("name");
+
+        var adminRole = roleRepository.findById("USER")
+                .orElseThrow(() -> new RuntimeException("User role not found"));
+        Set<Role> roles = new HashSet<>();
+        roles.add(adminRole);
+        // Tìm hoặc tạo user mới
+        User user = userRepository.findByEmail(email)
+                .orElseGet(() -> {
+                    User newUser = User.builder()
+                            .email(email)
+                            .firstName(name)
+                            .password("") // Không cần password cho OAuth2 user
+                            .roles(roles) // Gán role mặc định nếu cần
+                            .build();
+                    return userRepository.save(newUser);
+                });
+
+        // Sinh token
+        String accessToken = generateToken(user);
+        RefreshToken refreshToken = generateRefreshToken(user);
+
+        return AuthenticationResponse.builder()
+                .token(accessToken)
+                .refreshToken(refreshToken.getToken())
+                .authenticated(true)
                 .build();
     }
 
