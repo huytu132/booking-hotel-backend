@@ -42,6 +42,7 @@ public class UserService {
         user.setLastName(request.getLastName());
         user.setFirstName(request.getFirstName());
         user.setPhoneNo(request.getPhoneNo());
+        user.setProvider("LOCAL");
         user.setCreateAt(LocalDateTime.now());
 
         var roles = roleRepository.findAllById(request.getRoles());
