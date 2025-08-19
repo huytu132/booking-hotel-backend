@@ -67,15 +67,24 @@ public class SecurityConfig {
                 .authorizeHttpRequests(auth -> auth
                         .requestMatchers("/api/users", "/api/users/**").permitAll()
                         .requestMatchers(HttpMethod.GET, "/api/hotels/**").permitAll()
+                        .requestMatchers(HttpMethod.GET, "/api/addons/**").permitAll()
+
+                        // chỉ ADMIN mới được thêm/sửa/xóa hotel
                         .requestMatchers(HttpMethod.POST, "/api/hotels/**").hasRole("ADMIN")
                         .requestMatchers(HttpMethod.PUT, "/api/hotels/**").hasRole("ADMIN")
                         .requestMatchers(HttpMethod.DELETE, "/api/hotels/**").hasRole("ADMIN")
+
+                        // chỉ ADMIN mới được thêm/sửa/xóa addon
+                        .requestMatchers(HttpMethod.POST, "/api/addons/**").hasRole("ADMIN")
+                        .requestMatchers(HttpMethod.PUT, "/api/addons/**").hasRole("ADMIN")
+                        .requestMatchers(HttpMethod.DELETE, "/api/addons/**").hasRole("ADMIN")
                         .anyRequest().authenticated()
                 )
                 .oauth2ResourceServer(oauth2 -> oauth2.jwt(jwtConfigurer -> jwtConfigurer
                         .decoder(jwtDecoder())
                         .jwtAuthenticationConverter(jwtAuthenticationConverter())
                 ))
+                .cors(Customizer.withDefaults())
                 .csrf(AbstractHttpConfigurer::disable);
 
         return http.build();
@@ -118,44 +127,7 @@ public class SecurityConfig {
     public PasswordEncoder passwordEncoder() {
         return new BCryptPasswordEncoder(10);
     }
-
-//    @Bean
-//    public AuthenticationSuccessHandler oAuth2AuthenticationSuccessHandler() {
-//        return (request, response, authentication) -> {
-//            try {
-//                OAuth2User oAuth2User = (OAuth2User) authentication.getPrincipal();
-//                String email = oAuth2User.getAttribute("email");
-//                String name = oAuth2User.getAttribute("name");
-//                String sub = oAuth2User.getAttribute("sub");
-//
-//                log.info("OAuth2 Success - Email: {}, Name: {}, Sub: {}", email, name, sub);
-//
-//                // TODO: Uncomment khi đã có UserService
-//                // User user = userService.processOAuthPostLogin(email, name);
-//                // String accessToken = jwtUtil.generateToken(user);
-//                // String refreshToken = jwtUtil.generateRefreshToken(user);
-//
-//                // Tạm thời redirect về trang thành công để test
-//                response.sendRedirect("/auth1/oauth2/success?email=" + email);
-//
-//            } catch (Exception e) {
-//                log.error("Error in OAuth2 success handler", e);
-//                response.sendRedirect("/auth1/login?error=oauth_processing_failed");
-//            }
-//        };
-//    }
-//
-//    @Bean
-//    public AuthenticationFailureHandler oAuth2AuthenticationFailureHandler() {
-//        return (request, response, exception) -> {
-//            log.error("OAuth2 authentication failed", exception);
-//            try {
-//                response.sendRedirect("/auth1/login?error=oauth_failed");
-//            } catch (IOException e) {
-//                log.error("Error redirecting after OAuth2 failure", e);
-//            }
-//        };
-//    }
+}
 
     @Bean
     public RestTemplate restTemplate() {
