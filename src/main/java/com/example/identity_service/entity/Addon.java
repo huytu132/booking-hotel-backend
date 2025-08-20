@@ -43,5 +43,5 @@ public class Addon extends BaseEntity {
 
     @JsonIgnore
     @OneToMany(mappedBy = "addon", fetch = FetchType.LAZY)
-    private List<BookingAddon> bookingAddons = new ArrayList<>();
+    private List<BookingRoomAddon> bookingAddons = new ArrayList<>();
 }
