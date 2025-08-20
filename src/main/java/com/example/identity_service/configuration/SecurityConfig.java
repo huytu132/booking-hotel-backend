@@ -65,19 +65,26 @@ public class SecurityConfig {
         http
                 .securityMatcher("/api/**")
                 .authorizeHttpRequests(auth -> auth
-                        .requestMatchers("/api/users", "/api/users/**").permitAll()
-                        .requestMatchers(HttpMethod.GET, "/api/hotels/**").permitAll()
-                        .requestMatchers(HttpMethod.GET, "/api/addons/**").permitAll()
+//                        .requestMatchers("/api/users", "/api/users/**").permitAll()
+//                        .requestMatchers(HttpMethod.GET, "/api/hotels/**").permitAll()
+//                        .requestMatchers(HttpMethod.GET, "/api/addons/**").permitAll()
+//
+//                        // chỉ ADMIN mới được thêm/sửa/xóa hotel
+//                        .requestMatchers(HttpMethod.POST, "/api/hotels/**").hasRole("ADMIN")
+//                        .requestMatchers(HttpMethod.PUT, "/api/hotels/**").hasRole("ADMIN")
+//                        .requestMatchers(HttpMethod.DELETE, "/api/hotels/**").hasRole("ADMIN")
+//
+//                        // chỉ ADMIN mới được thêm/sửa/xóa addon
+//                        .requestMatchers(HttpMethod.POST, "/api/addons/**").hasRole("ADMIN")
+//                        .requestMatchers(HttpMethod.PUT, "/api/addons/**").hasRole("ADMIN")
+//                        .requestMatchers(HttpMethod.DELETE, "/api/addons/**").hasRole("ADMIN")
+//
+//                        .requestMatchers(HttpMethod.POST, "/api/features/**").hasRole("ADMIN")
+//                        .requestMatchers(HttpMethod.PUT, "/api/features/**").hasRole("ADMIN")
+//                        .requestMatchers(HttpMethod.DELETE, "/api/features/**").hasRole("ADMIN")
 
-                        // chỉ ADMIN mới được thêm/sửa/xóa hotel
-                        .requestMatchers(HttpMethod.POST, "/api/hotels/**").hasRole("ADMIN")
-                        .requestMatchers(HttpMethod.PUT, "/api/hotels/**").hasRole("ADMIN")
-                        .requestMatchers(HttpMethod.DELETE, "/api/hotels/**").hasRole("ADMIN")
+                                .requestMatchers("/api/**").permitAll()
 
-                        // chỉ ADMIN mới được thêm/sửa/xóa addon
-                        .requestMatchers(HttpMethod.POST, "/api/addons/**").hasRole("ADMIN")
-                        .requestMatchers(HttpMethod.PUT, "/api/addons/**").hasRole("ADMIN")
-                        .requestMatchers(HttpMethod.DELETE, "/api/addons/**").hasRole("ADMIN")
                         .anyRequest().authenticated()
                 )
                 .oauth2ResourceServer(oauth2 -> oauth2.jwt(jwtConfigurer -> jwtConfigurer

@@ -196,38 +196,6 @@ public class AuthenticationService {
                 .build();
     }
 
-    public AuthenticationResponse handleOAuth2Login(OAuth2User oAuth2User) {
-        // Lấy thông tin từ Google
-        String email = oAuth2User.getAttribute("email");
-        String name = oAuth2User.getAttribute("name");
-
-        var adminRole = roleRepository.findById("USER")
-                .orElseThrow(() -> new RuntimeException("User role not found"));
-        Set<Role> roles = new HashSet<>();
-        roles.add(adminRole);
-        // Tìm hoặc tạo user mới
-        User user = userRepository.findByEmail(email)
-                .orElseGet(() -> {
-                    User newUser = User.builder()
-                            .email(email)
-                            .firstName(name)
-                            .password("") // Không cần password cho OAuth2 user
-                            .roles(roles) // Gán role mặc định nếu cần
-                            .build();
-                    return userRepository.save(newUser);
-                });
-
-        // Sinh token
-        String accessToken = generateToken(user);
-        RefreshToken refreshToken = generateRefreshToken(user);
-
-        return AuthenticationResponse.builder()
-                .token(accessToken)
-                .refreshToken(refreshToken.getToken())
-                .authenticated(true)
-                .build();
-    }
-
     // Build scope (giữ nguyên)
     private String buildScope(User user) {
         StringJoiner stringJoiner = new StringJoiner(" ");
