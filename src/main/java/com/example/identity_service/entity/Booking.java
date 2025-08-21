@@ -38,15 +38,15 @@ public class Booking extends BaseEntity {
     private BigDecimal bookingAmount;
 
     @Enumerated(EnumType.STRING)
-    @Column(name = "booking_status", nullable = false)
+    @Column(name = "booking_status", nullable = false, length = 20)
     private BookingStatus bookingStatus;
 
     // Quan hệ
-    @JsonIgnore
+    @Builder.Default
     @OneToMany(mappedBy = "booking", fetch = FetchType.LAZY, cascade = CascadeType.ALL, orphanRemoval = true)
     private List<BookingRoom> bookingRooms = new ArrayList<>();
 
-    @JsonIgnore
+    @Builder.Default
     @OneToMany(mappedBy = "booking", fetch = FetchType.LAZY, cascade = CascadeType.ALL, orphanRemoval = true)
     private List<Payment> payments = new ArrayList<>();
 }
