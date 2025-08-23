@@ -68,6 +68,7 @@ public class SecurityConfig {
 //                        .requestMatchers("/api/users", "/api/users/**").permitAll()
 //                        .requestMatchers(HttpMethod.GET, "/api/hotels/**").permitAll()
 //                        .requestMatchers(HttpMethod.GET, "/api/addons/**").permitAll()
+                          .requestMatchers(HttpMethod.GET, "/api/room-classes/**").permitAll()
 //
 //                        // chỉ ADMIN mới được thêm/sửa/xóa hotel
 //                        .requestMatchers(HttpMethod.POST, "/api/hotels/**").hasRole("ADMIN")

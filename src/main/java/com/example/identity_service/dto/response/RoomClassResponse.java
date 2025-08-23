@@ -19,9 +19,9 @@ public class RoomClassResponse {
     private String description;
     private Integer discountPercent;
     private Integer capacity;
-    private Integer hotelId;
-    private List<Integer> bedTypeIds;
-    private List<Integer> featureIds;
+    private HotelResponse hotel;
+    private List<BedTypeResponse> bedTypes;
+    private List<FeatureResponse> features;
     private List<String> roomImagePaths;
     private LocalDateTime createAt;
     private String createBy;

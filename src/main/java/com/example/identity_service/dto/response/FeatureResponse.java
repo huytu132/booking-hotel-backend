@@ -10,11 +10,8 @@ import java.time.LocalDateTime;
 @Data
 @AllArgsConstructor
 @NoArgsConstructor
+@Builder
 public class FeatureResponse {
     private Integer id;
     private String featureName;
-    private LocalDateTime createAt;
-    private String createBy;
-    private LocalDateTime updateAt;
-    private String updateBy;
 }

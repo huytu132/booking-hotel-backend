@@ -17,6 +17,12 @@ public class RoomClassController {
 
     private final RoomClassService roomClassService;
 
+    @GetMapping
+    public ResponseEntity<List<RoomClassResponse>> getAllRoomClasses() {
+        List<RoomClassResponse> responseDTOs = roomClassService.getAllRoomClasses();
+        return ResponseEntity.ok(responseDTOs);
+    }
+
     @PostMapping
     public ResponseEntity<RoomClassResponse> createRoomClass(@RequestBody RoomClassRequest requestDTO) {
         RoomClassResponse responseDTO = roomClassService.createRoomClass(requestDTO);
