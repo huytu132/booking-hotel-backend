@@ -11,13 +11,13 @@ import java.math.BigDecimal;
 import java.util.ArrayList;
 import java.util.List;
 
+@Entity
+@Table(name = "addon")
 @Getter
 @Setter
-@Entity
 @Builder
 @AllArgsConstructor
 @NoArgsConstructor
-@Table(name = "addon")
 public class Addon extends BaseEntity {
 
     @Id
@@ -41,7 +41,13 @@ public class Addon extends BaseEntity {
     @Column(name = "active")
     private Boolean active = true;
 
+    @ManyToMany(fetch = FetchType.LAZY)
+    @JoinTable(name = "room_class_addon",
+            joinColumns = @JoinColumn(name = "addon_id"),
+            inverseJoinColumns = @JoinColumn(name = "room_class_id"))
+    private List<RoomClass> roomClasses = new ArrayList<>();
+
     @JsonIgnore
     @OneToMany(mappedBy = "addon", fetch = FetchType.LAZY)
-    private List<BookingRoomAddon> bookingAddons = new ArrayList<>();
+    private List<BookingRoomClassAddon> bookingRoomClassAddons = new ArrayList<>();
 }

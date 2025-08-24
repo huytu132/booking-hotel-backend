@@ -16,24 +16,24 @@ import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
-import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.HashSet;
 import java.util.List;
-import java.util.Set;
 import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
 @Slf4j
 public class UserService {
+
     private final UserRepository userRepository;
     private final UserMapper userMapper;
     private final PasswordEncoder passwordEncoder;
     private final RoleRepository roleRepository;
+    private final VerificationTokenService verificationTokenService;
 
-    public UserResponse createRequest(UserCreationRequest request){
-        if (userRepository.existsByEmail(request.getEmail())){
+    public UserResponse createRequest(UserCreationRequest request) {
+        if (userRepository.existsByEmail(request.getEmail())) {
             throw new AppException(ErrorCode.USER_EXISTED);
         }
 
@@ -43,51 +43,54 @@ public class UserService {
         user.setFirstName(request.getFirstName());
         user.setPhoneNo(request.getPhoneNo());
         user.setProvider("LOCAL");
+        user.setVerified(false); // Chưa xác thực
         user.setCreateAt(LocalDateTime.now());
 
         var roles = roleRepository.findAllById(request.getRoles());
-
         user.setRoles(new HashSet<>(roles));
 
-//        user.setRoles(roles);
+        User savedUser = userRepository.save(user);
 
-        return userMapper.toUserResponse(userRepository.save(user));
+        // Gửi email xác thực
+        verificationTokenService.createAndSendVerificationToken(savedUser);
+
+        return userMapper.toUserResponse(savedUser);
     }
 
-    public List<UserResponse> getAllUsers(){
+    public List<UserResponse> getAllUsers() {
         var authentication = SecurityContextHolder.getContext().getAuthentication();
-
-        log.info("Username : " + authentication.getName());
-        authentication.getAuthorities().forEach((grantedAuthority) -> log.info(grantedAuthority.getAuthority()));
+        log.info("Username: {}", authentication.getName());
+        authentication.getAuthorities().forEach(auth -> log.info("Authority: {}", auth.getAuthority()));
 
         return userRepository.findAll()
-                .stream().map((user) -> userMapper.toUserResponse(user))
+                .stream()
+                .map(userMapper::toUserResponse)
                 .collect(Collectors.toList());
     }
 
-    public UserResponse getYourInfo(){
+    public UserResponse getYourInfo() {
         var authentication = SecurityContextHolder.getContext().getAuthentication();
-
         User user = userRepository.findByEmail(authentication.getName())
                 .orElseThrow(() -> new AppException(ErrorCode.USER_NOT_EXISTED));
-
         return userMapper.toUserResponse(user);
     }
 
-    public UserResponse getUser(String userId){
-        return userMapper.toUserResponse(userRepository.findById(userId).orElseThrow(() -> new RuntimeException("User not found")));
+    public UserResponse getUser(String userId) {
+        return userMapper.toUserResponse(
+                userRepository.findById(userId)
+                        .orElseThrow(() -> new AppException(ErrorCode.USER_NOT_EXISTED))
+        );
     }
 
-    public UserResponse updateUser(String userId, UserUpdateRequest request){
+    public UserResponse updateUser(String userId, UserUpdateRequest request) {
         User user = userRepository.findById(userId)
-                .orElseThrow(() -> new RuntimeException("User not found"));
+                .orElseThrow(() -> new AppException(ErrorCode.USER_NOT_EXISTED));
         userMapper.updateUser(user, request);
-
         return userMapper.toUserResponse(userRepository.save(user));
     }
 
-    public String deleteUser(String userId){
+    public String deleteUser(String userId) {
         userRepository.deleteById(userId);
-        return "user was deleted";
+        return "User was deleted";
     }
 }

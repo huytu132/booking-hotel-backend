@@ -16,42 +16,41 @@ import java.util.Set;
 @Builder
 @AllArgsConstructor
 @NoArgsConstructor
-@Table(name = "user")
+@Table(name = "users") // số nhiều để tránh conflict keyword
 public class User extends BaseEntity {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
-    @Column(name = "id", nullable = false)
     private int id;
 
     @Email
     @Size(max = 50)
-    @Column(name = "email", nullable = false, unique = true)
+    @Column(nullable = false, unique = true)
     private String email;
 
     @Size(max = 100)
-    @Column(name = "password") // Cho phép null nếu đăng nhập bằng OAuth2
+    @Column // Cho phép null nếu chỉ dùng OAuth2
     private String password;
 
     @Size(max = 50)
     @Nationalized
-    @Column(name = "first_name")
     private String firstName;
 
     @Size(max = 50)
     @Nationalized
-    @Column(name = "last_name")
     private String lastName;
 
     @Size(max = 50)
-    @Column(name = "phone_no", unique = true)
+    @Column(unique = true)
     private String phoneNo;
 
-    @Column(name = "provider", length = 20, nullable = false)
-    private String provider; // LOCAL, GOOGLE, FACEBOOK, GITHUB...
+    @Column(length = 20)
+    private String provider;
 
-    @Column(name = "provider_id")
-    private String providerId; // sub/id từ OAuth provider
+    /** Xác thực email? */
+    @Column(nullable = false)
+    @Builder.Default
+    private boolean isVerified = false;
 
     @Builder.Default
     @ManyToMany(fetch = FetchType.EAGER, cascade = CascadeType.MERGE)
@@ -61,4 +60,12 @@ public class User extends BaseEntity {
             inverseJoinColumns = @JoinColumn(name = "role_name")
     )
     private Set<Role> roles = new HashSet<>();
+
+    /** Một user có thể có nhiều tài khoản OAuth2 */
+    @OneToMany(mappedBy = "user", cascade = CascadeType.ALL, orphanRemoval = true)
+    private Set<OAuth2Account> oauth2Accounts = new HashSet<>();
+
+    /** Một user có thể có nhiều token xác thực (verify/reset) */
+    @OneToMany(mappedBy = "user", cascade = CascadeType.ALL, orphanRemoval = true)
+    private Set<VerificationToken> verificationTokens = new HashSet<>();
 }

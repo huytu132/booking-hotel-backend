@@ -1,6 +1,5 @@
 package com.example.identity_service.service;
 
-import com.example.identity_service.dto.request.BookingRequest;
 import com.example.identity_service.dto.request.BookingRoomRequest;
 import com.example.identity_service.dto.request.BookingRoomAddonRequest;
 import com.example.identity_service.dto.response.BookingResponse;
@@ -13,6 +12,7 @@ import com.example.identity_service.exception.AppException;
 import com.example.identity_service.exception.ErrorCode;
 import com.example.identity_service.mapper.BookingMapper;
 import com.example.identity_service.repository.*;
+import jakarta.servlet.http.HttpServletRequest;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.security.core.context.SecurityContextHolder;
@@ -32,17 +32,18 @@ import java.util.stream.Collectors;
 public class BookingService {
 
     private final BookingRepository bookingRepository;
-    private final BookingRoomRepository bookingRoomRepository;
+    private final BookingRoomClassRepository bookingRoomClassRepository;
     private final UserRepository userRepository;
     private final RoomRepository roomRepository;
+    private final RoomClassRepository roomClassRepository;
     private final AddonRepository addonRepository;
     private final BookingMapper bookingMapper;
+    private final VNPayService vnPayService;
 
     // 1. Lấy giỏ hàng hiện tại của user
     public CartResponse getCart() {
         User currentUser = getCurrentUser();
 
-        // Tìm booking với status CART
         Booking cartBooking = bookingRepository.findByUserAndBookingStatus(currentUser, BookingStatus.CART)
                 .orElse(null);
 
@@ -63,13 +64,18 @@ public class BookingService {
     public CartResponse addToCart(BookingRoomRequest request) {
         User currentUser = getCurrentUser();
 
-        // Kiểm tra phòng có tồn tại và available không
-        Room room = roomRepository.findById(request.getRoomId())
-                .orElseThrow(() -> new RuntimeException("Room not found"));
+        // Kiểm tra RoomClass có tồn tại không
+        RoomClass roomClass = roomClassRepository.findById(request.getRoomClassId())
+                .orElseThrow(() -> new AppException(ErrorCode.ROOM_CLASS_NOT_FOUND));
 
-        // Kiểm tra phòng có available trong khoảng thời gian không
-        if (!isRoomAvailable(room.getId(), request.getCheckinDate(), request.getCheckoutDate())) {
-            throw new RuntimeException("Room is not available for selected dates");
+        // Kiểm tra số lượng phòng khả dụng
+        if (!isRoomClassAvailable(roomClass.getId(), request.getCheckinDate(), request.getCheckoutDate(), request.getQuantity())) {
+            throw new AppException(ErrorCode.ROOM_NOT_AVAILABLE);
+        }
+
+        // Kiểm tra số lượng khách hợp lệ
+        if (request.getNumAdults() + (request.getNumChildren() != null ? request.getNumChildren() : 0) > roomClass.getCapacity() * request.getQuantity()) {
+            throw new AppException(ErrorCode.GUEST_EXCEEDS_CAPACITY);
         }
 
         // Lấy hoặc tạo cart booking
@@ -84,32 +90,33 @@ public class BookingService {
                     return bookingRepository.save(newCart);
                 });
 
-        // Kiểm tra xem phòng đã có trong cart chưa
-        boolean roomExistsInCart = cartBooking.getBookingRooms().stream()
-                .anyMatch(br -> br.getRoom().getId() == room.getId() &&
+        // Kiểm tra xem RoomClass đã có trong cart với cùng ngày check-in/check-out chưa
+        boolean roomClassExistsInCart = cartBooking.getBookingRoomClasses().stream()
+                .anyMatch(br -> br.getRoomClass().getId().equals(request.getRoomClassId()) &&
                         br.getCheckinDate().equals(request.getCheckinDate()) &&
                         br.getCheckoutDate().equals(request.getCheckoutDate()));
 
-        if (roomExistsInCart) {
-            throw new RuntimeException("Room already exists in cart for these dates");
+        if (roomClassExistsInCart) {
+            throw new AppException(ErrorCode.ROOM_CLASS_ALREADY_IN_CART);
         }
 
         // Tính giá phòng
         long nights = ChronoUnit.DAYS.between(request.getCheckinDate(), request.getCheckoutDate());
-        BigDecimal roomPrice = room.getRoomClass().getPriceOriginal();
-        Integer discountPercent = room.getRoomClass().getDiscountPercent();
+        BigDecimal roomPrice = roomClass.getPriceOriginal();
+        Integer discountPercent = roomClass.getDiscountPercent();
 
         if (discountPercent != null && discountPercent > 0) {
             BigDecimal discount = roomPrice.multiply(BigDecimal.valueOf(discountPercent)).divide(BigDecimal.valueOf(100));
             roomPrice = roomPrice.subtract(discount);
         }
 
-        BigDecimal roomSubtotal = roomPrice.multiply(BigDecimal.valueOf(nights));
+        BigDecimal roomSubtotal = roomPrice.multiply(BigDecimal.valueOf(request.getQuantity())).multiply(BigDecimal.valueOf(nights));
 
-        // Tạo booking room
-        BookingRoom bookingRoom = BookingRoom.builder()
+        // Tạo BookingRoomClass
+        BookingRoomClass bookingRoomClass = BookingRoomClass.builder()
                 .booking(cartBooking)
-                .room(room)
+                .roomClass(roomClass)
+                .quantity(request.getQuantity())
                 .checkinDate(request.getCheckinDate())
                 .checkoutDate(request.getCheckoutDate())
                 .numAdults(request.getNumAdults())
@@ -117,21 +124,25 @@ public class BookingService {
                 .roomPrice(roomPrice)
                 .subtotal(roomSubtotal)
                 .status("IN_CART")
+                .rooms(new ArrayList<>()) // Ban đầu không có Room
                 .build();
 
         // Thêm addons nếu có
+        BigDecimal addonTotal = BigDecimal.ZERO;
+        List<BookingRoomClassAddon> bookingAddons = new ArrayList<>();
         if (request.getAddons() != null && !request.getAddons().isEmpty()) {
-            BigDecimal addonTotal = BigDecimal.ZERO;
-            List<BookingRoomAddon> bookingAddons = new ArrayList<>();
-
             for (BookingRoomAddonRequest addonReq : request.getAddons()) {
                 Addon addon = addonRepository.findById(addonReq.getAddonId())
-                        .orElseThrow(() -> new RuntimeException("Addon not found"));
+                        .orElseThrow(() -> new AppException(ErrorCode.ADDON_NOT_FOUND));
+
+                if (addonReq.getQuantity() < 0) {
+                    throw new AppException(ErrorCode.INVALID_QUANTITY);
+                }
 
                 BigDecimal addonSubtotal = addon.getPrice().multiply(BigDecimal.valueOf(addonReq.getQuantity()));
 
-                BookingRoomAddon bookingAddon = BookingRoomAddon.builder()
-                        .bookingRoom(bookingRoom)
+                BookingRoomClassAddon bookingAddon = BookingRoomClassAddon.builder()
+                        .bookingRoomClass(bookingRoomClass)
                         .addon(addon)
                         .quantity(addonReq.getQuantity())
                         .price(addon.getPrice())
@@ -141,16 +152,16 @@ public class BookingService {
                 bookingAddons.add(bookingAddon);
                 addonTotal = addonTotal.add(addonSubtotal);
             }
-
-            bookingRoom.setBookingRoomAddons(bookingAddons);
-            bookingRoom.setSubtotal(bookingRoom.getSubtotal().add(addonTotal));
         }
 
-        bookingRoomRepository.save(bookingRoom);
+        bookingRoomClass.setBookingRoomClassAddons(bookingAddons);
+        bookingRoomClass.setSubtotal(roomSubtotal.add(addonTotal));
+
+        bookingRoomClassRepository.save(bookingRoomClass);
 
         // Cập nhật tổng của booking
-        cartBooking.setTotalRoom(cartBooking.getTotalRoom() + 1);
-        cartBooking.setBookingAmount(cartBooking.getBookingAmount().add(bookingRoom.getSubtotal()));
+        cartBooking.setTotalRoom(cartBooking.getTotalRoom() + request.getQuantity());
+        cartBooking.setBookingAmount(cartBooking.getBookingAmount().add(bookingRoomClass.getSubtotal()));
         bookingRepository.save(cartBooking);
 
         return convertToCartResponse(cartBooking);
@@ -158,26 +169,26 @@ public class BookingService {
 
     // 3. Xóa phòng khỏi giỏ hàng
     @Transactional
-    public CartResponse removeFromCart(Integer bookingRoomId) {
+    public CartResponse removeFromCart(Integer bookingRoomClassId) {
         User currentUser = getCurrentUser();
 
         Booking cartBooking = bookingRepository.findByUserAndBookingStatus(currentUser, BookingStatus.CART)
-                .orElseThrow(() -> new RuntimeException("Cart not found"));
+                .orElseThrow(() -> new AppException(ErrorCode.CART_NOT_FOUND));
 
-        BookingRoom bookingRoom = bookingRoomRepository.findById(bookingRoomId)
-                .orElseThrow(() -> new RuntimeException("Booking room not found"));
+        BookingRoomClass bookingRoomClass = bookingRoomClassRepository.findById(bookingRoomClassId)
+                .orElseThrow(() -> new AppException(ErrorCode.BOOKING_ROOM_CLASS_NOT_FOUND));
 
-        // Kiểm tra booking room thuộc về cart của user
-        if (bookingRoom.getBooking().getId() != cartBooking.getId()) {
-            throw new RuntimeException("Booking room does not belong to your cart");
+        // Kiểm tra booking room class thuộc về cart của user
+        if (!bookingRoomClass.getBooking().getId().equals(cartBooking.getId())) {
+            throw new AppException(ErrorCode.BOOKING_ROOM_CLASS_NOT_IN_CART);
         }
 
         // Cập nhật tổng
-        cartBooking.setTotalRoom(cartBooking.getTotalRoom() - 1);
-        cartBooking.setBookingAmount(cartBooking.getBookingAmount().subtract(bookingRoom.getSubtotal()));
+        cartBooking.setTotalRoom(cartBooking.getTotalRoom() - bookingRoomClass.getQuantity());
+        cartBooking.setBookingAmount(cartBooking.getBookingAmount().subtract(bookingRoomClass.getSubtotal()));
 
-        // Xóa booking room
-        bookingRoomRepository.delete(bookingRoom);
+        // Xóa booking room class
+        bookingRoomClassRepository.delete(bookingRoomClass);
         bookingRepository.save(cartBooking);
 
         return convertToCartResponse(cartBooking);
@@ -185,55 +196,61 @@ public class BookingService {
 
     // 4. Cập nhật số lượng addon trong giỏ hàng
     @Transactional
-    public CartResponse updateCartItemAddons(Integer bookingRoomId, List<BookingRoomAddonRequest> addons) {
+    public CartResponse updateCartItemAddons(Integer bookingRoomClassId, List<BookingRoomAddonRequest> addons) {
         User currentUser = getCurrentUser();
 
         Booking cartBooking = bookingRepository.findByUserAndBookingStatus(currentUser, BookingStatus.CART)
-                .orElseThrow(() -> new RuntimeException("Cart not found"));
+                .orElseThrow(() -> new AppException(ErrorCode.CART_NOT_FOUND));
 
-        BookingRoom bookingRoom = bookingRoomRepository.findById(bookingRoomId)
-                .orElseThrow(() -> new RuntimeException("Booking room not found"));
+        BookingRoomClass bookingRoomClass = bookingRoomClassRepository.findById(bookingRoomClassId)
+                .orElseThrow(() -> new AppException(ErrorCode.BOOKING_ROOM_CLASS_NOT_FOUND));
 
-        // Kiểm tra booking room thuộc về cart của user
-        if (bookingRoom.getBooking().getId() != cartBooking.getId()) {
-            throw new RuntimeException("Booking room does not belong to your cart");
+        // Kiểm tra booking room class thuộc về cart của user
+        if (!bookingRoomClass.getBooking().getId().equals(cartBooking.getId())) {
+            throw new AppException(ErrorCode.BOOKING_ROOM_CLASS_NOT_IN_CART);
         }
 
         // Xóa addons cũ
-        bookingRoom.getBookingRoomAddons().clear();
-        BigDecimal oldSubtotal = bookingRoom.getSubtotal();
+        BigDecimal oldSubtotal = bookingRoomClass.getSubtotal();
+        bookingRoomClass.getBookingRoomClassAddons().clear();
 
         // Tính lại subtotal của room (chỉ tính giá phòng)
-        long nights = ChronoUnit.DAYS.between(bookingRoom.getCheckinDate(), bookingRoom.getCheckoutDate());
-        BigDecimal roomSubtotal = bookingRoom.getRoomPrice().multiply(BigDecimal.valueOf(nights));
+        long nights = ChronoUnit.DAYS.between(bookingRoomClass.getCheckinDate(), bookingRoomClass.getCheckoutDate());
+        BigDecimal roomSubtotal = bookingRoomClass.getRoomPrice()
+                .multiply(BigDecimal.valueOf(bookingRoomClass.getQuantity()))
+                .multiply(BigDecimal.valueOf(nights));
 
         // Thêm addons mới
         BigDecimal addonTotal = BigDecimal.ZERO;
         if (addons != null && !addons.isEmpty()) {
             for (BookingRoomAddonRequest addonReq : addons) {
                 Addon addon = addonRepository.findById(addonReq.getAddonId())
-                        .orElseThrow(() -> new RuntimeException("Addon not found"));
+                        .orElseThrow(() -> new AppException(ErrorCode.ADDON_NOT_FOUND));
+
+                if (addonReq.getQuantity() < 0) {
+                    throw new AppException(ErrorCode.INVALID_QUANTITY);
+                }
 
                 BigDecimal addonSubtotal = addon.getPrice().multiply(BigDecimal.valueOf(addonReq.getQuantity()));
 
-                BookingRoomAddon bookingAddon = BookingRoomAddon.builder()
-                        .bookingRoom(bookingRoom)
+                BookingRoomClassAddon bookingAddon = BookingRoomClassAddon.builder()
+                        .bookingRoomClass(bookingRoomClass)
                         .addon(addon)
                         .quantity(addonReq.getQuantity())
                         .price(addon.getPrice())
                         .subtotal(addonSubtotal)
                         .build();
 
-                bookingRoom.getBookingRoomAddons().add(bookingAddon);
+                bookingRoomClass.getBookingRoomClassAddons().add(bookingAddon);
                 addonTotal = addonTotal.add(addonSubtotal);
             }
         }
 
-        bookingRoom.setSubtotal(roomSubtotal.add(addonTotal));
-        bookingRoomRepository.save(bookingRoom);
+        bookingRoomClass.setSubtotal(roomSubtotal.add(addonTotal));
+        bookingRoomClassRepository.save(bookingRoomClass);
 
         // Cập nhật tổng booking
-        cartBooking.setBookingAmount(cartBooking.getBookingAmount().subtract(oldSubtotal).add(bookingRoom.getSubtotal()));
+        cartBooking.setBookingAmount(cartBooking.getBookingAmount().subtract(oldSubtotal).add(bookingRoomClass.getSubtotal()));
         bookingRepository.save(cartBooking);
 
         return convertToCartResponse(cartBooking);
@@ -245,44 +262,50 @@ public class BookingService {
         User currentUser = getCurrentUser();
 
         bookingRepository.findByUserAndBookingStatus(currentUser, BookingStatus.CART)
-                .ifPresent(cartBooking -> {
-                    bookingRepository.delete(cartBooking);
-                });
+                .ifPresent(cartBooking -> bookingRepository.delete(cartBooking));
     }
 
     // 6. Checkout - chuyển cart thành booking
     @Transactional
-    public BookingResponse checkout() {
+    public String checkout(HttpServletRequest request) {
         User currentUser = getCurrentUser();
 
         Booking cartBooking = bookingRepository.findByUserAndBookingStatus(currentUser, BookingStatus.CART)
-                .orElseThrow(() -> new RuntimeException("Cart is empty"));
+                .orElseThrow(() -> new AppException(ErrorCode.CART_NOT_FOUND));
 
-        if (cartBooking.getBookingRooms().isEmpty()) {
-            throw new RuntimeException("Cart has no items");
+        if (cartBooking.getBookingRoomClasses().isEmpty()) {
+            throw new AppException(ErrorCode.CART_EMPTY);
         }
 
-        // Kiểm tra lại tất cả phòng có available không
-        for (BookingRoom bookingRoom : cartBooking.getBookingRooms()) {
-            if (!isRoomAvailable(bookingRoom.getRoom().getId(),
-                    bookingRoom.getCheckinDate(),
-                    bookingRoom.getCheckoutDate())) {
-                throw new RuntimeException("Room " + bookingRoom.getRoom().getRoomNumber() +
-                        " is no longer available");
+//         Kiểm tra lại tất cả RoomClass có đủ phòng không
+        for (BookingRoomClass bookingRoomClass : cartBooking.getBookingRoomClasses()) {
+            if (!isRoomClassAvailable(
+                    bookingRoomClass.getRoomClass().getId(),
+                    bookingRoomClass.getCheckinDate(),
+                    bookingRoomClass.getCheckoutDate(),
+                    bookingRoomClass.getQuantity())) {
+                throw new AppException(ErrorCode.ROOM_NOT_AVAILABLE);
             }
         }
 
         // Chuyển status từ CART sang PENDING
         cartBooking.setBookingStatus(BookingStatus.PENDING);
 
-        // Cập nhật status của các booking room
-        for (BookingRoom bookingRoom : cartBooking.getBookingRooms()) {
-            bookingRoom.setStatus("PENDING");
+        // Cập nhật status của các booking room class
+        for (BookingRoomClass bookingRoomClass : cartBooking.getBookingRoomClasses()) {
+            bookingRoomClass.setStatus("PENDING");
         }
+
+        // Comment phần gọi PaymentService (dự định dùng VNPay)
+        // paymentService.processPayment(cartBooking);
 
         Booking savedBooking = bookingRepository.save(cartBooking);
 
-        return bookingMapper.toResponse(savedBooking);
+        String paymentUrl = vnPayService.createPaymentUrl(cartBooking, request);
+
+        return paymentUrl; // FE redirect sang VNPay
+
+//        return bookingMapper.toResponse(savedBooking);
     }
 
     // 7. Lấy danh sách bookings của user (không bao gồm cart)
@@ -300,11 +323,11 @@ public class BookingService {
         User currentUser = getCurrentUser();
 
         Booking booking = bookingRepository.findById(bookingId)
-                .orElseThrow(() -> new RuntimeException("Booking not found"));
+                .orElseThrow(() -> new AppException(ErrorCode.BOOKING_NOT_FOUND));
 
         // Kiểm tra booking thuộc về user
-        if (booking.getUser().getId() != currentUser.getId()) {
-            throw new RuntimeException("Booking does not belong to you");
+        if (!(booking.getUser().getId() == currentUser.getId())) {
+            throw new AppException(ErrorCode.UNAUTHORIZED);
         }
 
         return bookingMapper.toResponse(booking);
@@ -316,25 +339,28 @@ public class BookingService {
         User currentUser = getCurrentUser();
 
         Booking booking = bookingRepository.findById(bookingId)
-                .orElseThrow(() -> new RuntimeException("Booking not found"));
+                .orElseThrow(() -> new AppException(ErrorCode.BOOKING_NOT_FOUND));
 
         // Kiểm tra booking thuộc về user
-        if (booking.getUser().getId() != currentUser.getId()) {
-            throw new RuntimeException("Booking does not belong to you");
+        if (!(booking.getUser().getId() == currentUser.getId())) {
+            throw new AppException(ErrorCode.UNAUTHORIZED);
         }
 
         // Chỉ cho phép hủy booking PENDING hoặc CONFIRMED
         if (booking.getBookingStatus() != BookingStatus.PENDING &&
                 booking.getBookingStatus() != BookingStatus.CONFIRMED) {
-            throw new RuntimeException("Cannot cancel booking with status: " + booking.getBookingStatus());
+            throw new AppException(ErrorCode.CANNOT_CANCEL_BOOKING);
         }
 
         booking.setBookingStatus(BookingStatus.CANCELLED);
 
-        // Cập nhật status của các booking room
-        for (BookingRoom bookingRoom : booking.getBookingRooms()) {
-            bookingRoom.setStatus("CANCELLED");
+        // Cập nhật status của các booking room class
+        for (BookingRoomClass bookingRoomClass : booking.getBookingRoomClasses()) {
+            bookingRoomClass.setStatus("CANCELLED");
         }
+
+        // Comment phần gọi PaymentService (dự định dùng VNPay)
+        // paymentService.processCancellationRefund(booking);
 
         Booking savedBooking = bookingRepository.save(booking);
 
@@ -348,14 +374,25 @@ public class BookingService {
                 .orElseThrow(() -> new AppException(ErrorCode.USER_NOT_EXISTED));
     }
 
-    private boolean isRoomAvailable(Integer roomId, LocalDateTime checkinDate, LocalDateTime checkoutDate) {
-        List<BookingRoom> conflictingBookings = bookingRoomRepository.findConflictingBookings(
-                roomId, checkinDate, checkoutDate);
-        return conflictingBookings.isEmpty();
+    private boolean isRoomClassAvailable(Integer roomClassId, LocalDateTime checkinDate, LocalDateTime checkoutDate, int requestedQuantity) {
+        RoomClass roomClass = roomClassRepository.findById(roomClassId)
+                .orElseThrow(() -> new AppException(ErrorCode.ROOM_CLASS_NOT_FOUND));
+
+        List<Room> availableRooms = roomRepository.findByRoomClassAndRoomStatus(roomClass, RoomStatusType.AVAILABLE);
+        List<BookingRoomClass> conflictingBookings = bookingRoomClassRepository.findConflictingBookings(
+                roomClassId, checkinDate, checkoutDate);
+
+        int bookedRooms = conflictingBookings.stream()
+                .mapToInt(BookingRoomClass::getQuantity)
+                .sum();
+        int totalRooms = availableRooms.size();
+        int remainingRooms = totalRooms - bookedRooms;
+
+        return remainingRooms >= requestedQuantity;
     }
 
     private CartResponse convertToCartResponse(Booking cartBooking) {
-        List<BookingRoomResponse> items = cartBooking.getBookingRooms().stream()
+        List<BookingRoomResponse> items = cartBooking.getBookingRoomClasses().stream()
                 .map(bookingMapper::toBookingRoomResponse)
                 .collect(Collectors.toList());
 

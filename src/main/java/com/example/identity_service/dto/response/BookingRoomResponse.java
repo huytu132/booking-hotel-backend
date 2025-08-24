@@ -11,9 +11,10 @@ import java.util.List;
 @AllArgsConstructor
 public class BookingRoomResponse {
     private Integer id;
-    private Integer roomId;
-    private String roomNumber;
+    private Integer roomClassId;
     private String roomClassName;
+    private Integer quantity; // Số lượng phòng
+    private List<Integer> roomIds;
     private String hotelName;
     private LocalDateTime checkinDate;
     private LocalDateTime checkoutDate;

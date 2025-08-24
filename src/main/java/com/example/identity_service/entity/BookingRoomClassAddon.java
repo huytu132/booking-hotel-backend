@@ -6,21 +6,21 @@ import lombok.*;
 import java.math.BigDecimal;
 
 @Entity
-@Table(name = "booking_room_addon")
+@Table(name = "booking_room_class_addon")
 @Getter
 @Setter
 @Builder
 @AllArgsConstructor
 @NoArgsConstructor
-public class BookingRoomAddon {
+public class BookingRoomClassAddon {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private int id;
 
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "booking_room_id", nullable = false)
-    private BookingRoom bookingRoom;
+    @JoinColumn(name = "booking_room_class_id", nullable = false)
+    private BookingRoomClass bookingRoomClass; // Liên kết với BookingRoomClass
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "addon_id", nullable = false)
@@ -35,4 +35,3 @@ public class BookingRoomAddon {
     @Column(name = "subtotal", precision = 10, scale = 2)
     private BigDecimal subtotal;
 }
-

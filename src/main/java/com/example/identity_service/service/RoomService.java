@@ -5,7 +5,7 @@ import com.example.identity_service.dto.response.RoomResponse;
 import com.example.identity_service.entity.Room;
 import com.example.identity_service.entity.RoomClass;
 import com.example.identity_service.mapper.RoomMapper;
-import com.example.identity_service.repository.BookingRoomRepository;
+import com.example.identity_service.repository.BookingRoomClassRepository;
 import com.example.identity_service.repository.RoomClassRepository;
 import com.example.identity_service.repository.RoomRepository;
 import lombok.RequiredArgsConstructor;
@@ -22,7 +22,7 @@ public class RoomService {
 
     private final RoomRepository roomRepository;
     private final RoomClassRepository roomClassRepository;
-    private final BookingRoomRepository bookingRoomRepository;
+    private final BookingRoomClassRepository bookingRoomClassRepository;
     private final RoomMapper roomMapper;
 
     @Transactional
@@ -81,24 +81,24 @@ public class RoomService {
                 .orElseThrow(() -> new RuntimeException("Room not found with id: " + id));
 
         // Kiểm tra xem phòng có liên quan đến BookingRoom không
-        if (!room.getBookingRooms().isEmpty()) {
+        if (!room.getBookingRoomClasses().isEmpty()) {
             throw new RuntimeException("Cannot delete Room with associated bookings");
         }
 
         roomRepository.deleteById(id);
     }
 
-    public List<RoomResponse> findAvailableRooms(Integer roomClassId, LocalDateTime checkinDate, LocalDateTime checkoutDate) {
-        if (checkinDate.isAfter(checkoutDate) || checkinDate.isBefore(LocalDateTime.now())) {
-            throw new RuntimeException("Invalid date range: check-in must be before check-out and not in the past");
-        }
-
-        List<Room> availableRooms = roomClassId != null
-                ? roomRepository.findAvailableRoomsByRoomClassId(roomClassId, checkinDate, checkoutDate)
-                : roomRepository.findAllAvailableRooms(checkinDate, checkoutDate);
-
-        return availableRooms.stream()
-                .map(roomMapper::toResponse)
-                .collect(Collectors.toList());
-    }
+//    public List<RoomResponse> findAvailableRooms(Integer roomClassId, LocalDateTime checkinDate, LocalDateTime checkoutDate) {
+//        if (checkinDate.isAfter(checkoutDate) || checkinDate.isBefore(LocalDateTime.now())) {
+//            throw new RuntimeException("Invalid date range: check-in must be before check-out and not in the past");
+//        }
+//
+//        List<Room> availableRooms = roomClassId != null
+//                ? roomRepository.findAvailableRoomsByRoomClassId(roomClassId, checkinDate, checkoutDate)
+//                : roomRepository.findAllAvailableRooms(checkinDate, checkoutDate);
+//
+//        return availableRooms.stream()
+//                .map(roomMapper::toResponse)
+//                .collect(Collectors.toList());
+//    }
 }

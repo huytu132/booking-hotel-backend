@@ -11,13 +11,14 @@ import org.springframework.stereotype.Repository;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Optional;
 
 @Repository
 public interface PaymentRepository extends JpaRepository<Payment, Integer> {
 
     List<Payment> findByBooking(Booking booking);
-
     List<Payment> findByBookingOrderByPaymentDateDesc(Booking booking);
+    Optional<Payment> findByBookingAndTransId(Booking booking, String transId);
 
     @Query("SELECT SUM(p.paymentAmount) FROM Payment p " +
             "WHERE p.paymentDate BETWEEN :startDate AND :endDate " +

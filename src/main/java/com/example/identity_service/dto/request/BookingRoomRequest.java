@@ -9,7 +9,8 @@ import java.util.List;
 @NoArgsConstructor
 @AllArgsConstructor
 public class BookingRoomRequest {
-    private Integer roomId;
+    private Integer roomClassId; // ID của RoomClass (thay vì roomId)
+    private Integer quantity; // Số lượng phòng
     private LocalDateTime checkinDate;
     private LocalDateTime checkoutDate;
     private Integer numAdults;

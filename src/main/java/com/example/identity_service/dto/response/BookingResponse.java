@@ -18,7 +18,7 @@ public class BookingResponse {
     private Integer totalRoom;
     private BigDecimal bookingAmount;
     private BookingStatus bookingStatus;
-    private List<BookingRoomResponse> bookingRooms;
+    private List<BookingRoomResponse> bookingRoomResponses;
     private LocalDateTime createAt;
     private LocalDateTime updateAt;
 }

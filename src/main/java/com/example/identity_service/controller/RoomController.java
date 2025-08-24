@@ -49,12 +49,12 @@ public class RoomController {
         return ResponseEntity.noContent().build();
     }
 
-    @GetMapping("/available")
-    public ResponseEntity<List<RoomResponse>> findAvailableRooms(
-            @RequestParam(required = false) Integer roomClassId,
-            @RequestParam @DateTimeFormat(pattern = "dd-MM-yyyy HH:mm:ss") LocalDateTime checkinDate,
-            @RequestParam @DateTimeFormat(pattern = "dd-MM-yyyy HH:mm:ss") LocalDateTime checkoutDate) {
-        List<RoomResponse> responseDTOs = roomService.findAvailableRooms(roomClassId, checkinDate, checkoutDate);
-        return ResponseEntity.ok(responseDTOs);
-    }
+//    @GetMapping("/available")
+//    public ResponseEntity<List<RoomResponse>> findAvailableRooms(
+//            @RequestParam(required = false) Integer roomClassId,
+//            @RequestParam @DateTimeFormat(pattern = "dd-MM-yyyy HH:mm:ss") LocalDateTime checkinDate,
+//            @RequestParam @DateTimeFormat(pattern = "dd-MM-yyyy HH:mm:ss") LocalDateTime checkoutDate) {
+//        List<RoomResponse> responseDTOs = roomService.findAvailableRooms(roomClassId, checkinDate, checkoutDate);
+//        return ResponseEntity.ok(responseDTOs);
+//    }
 }
