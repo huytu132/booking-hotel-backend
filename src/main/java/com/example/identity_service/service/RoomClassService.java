@@ -142,7 +142,7 @@ public class RoomClassService {
             // Xóa bớt Room nếu quantity giảm
             List<Room> roomsToDelete = existingRooms.subList(newQuantity, existingRooms.size());
             for (Room room : roomsToDelete) {
-                if (!room.getBookingRooms().isEmpty()) {
+                if (!room.getBookingRoomClasses().isEmpty()) {
                     throw new RuntimeException("Cannot delete Room with associated bookings");
                 }
             }
@@ -184,7 +184,7 @@ public class RoomClassService {
         // Kiểm tra xem có Room liên quan không
         List<Room> rooms = roomRepository.findByRoomClassId(id);
         for (Room room : rooms) {
-            if (!room.getBookingRooms().isEmpty()) {
+            if (!room.getBookingRoomClasses().isEmpty()) {
                 throw new RuntimeException("Cannot delete RoomClass with associated bookings");
             }
         }

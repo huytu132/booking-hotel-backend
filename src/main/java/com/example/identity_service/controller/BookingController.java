@@ -5,6 +5,7 @@ import com.example.identity_service.dto.request.BookingRoomAddonRequest;
 import com.example.identity_service.dto.response.BookingResponse;
 import com.example.identity_service.dto.response.CartResponse;
 import com.example.identity_service.service.BookingService;
+import jakarta.servlet.http.HttpServletRequest;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -56,9 +57,11 @@ public class BookingController {
 
     // Checkout - chuyển cart thành booking
     @PostMapping("/cart/checkout")
-    public ResponseEntity<BookingResponse> checkout() {
-        return ResponseEntity.status(HttpStatus.CREATED)
-                .body(bookingService.checkout());
+    public ResponseEntity<String> checkout(HttpServletRequest request) {
+        String paymentUrl = bookingService.checkout(request);
+
+        // Trả về URL cho FE redirect
+        return ResponseEntity.status(HttpStatus.CREATED).body(paymentUrl);
     }
 
     // === BOOKING OPERATIONS ===

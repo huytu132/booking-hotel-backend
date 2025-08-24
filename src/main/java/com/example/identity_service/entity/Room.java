@@ -9,13 +9,13 @@ import lombok.*;
 import java.util.ArrayList;
 import java.util.List;
 
+@Entity
+@Table(name = "room")
 @Getter
 @Setter
-@Entity
 @Builder
 @AllArgsConstructor
 @NoArgsConstructor
-@Table(name = "room")
 public class Room extends BaseEntity {
 
     @Id
@@ -35,6 +35,6 @@ public class Room extends BaseEntity {
     private String roomNumber;
 
     @JsonIgnore
-    @OneToMany(mappedBy = "room", fetch = FetchType.LAZY)
-    private List<BookingRoom> bookingRooms = new ArrayList<>();
+    @ManyToMany(mappedBy = "rooms", fetch = FetchType.LAZY)
+    private List<BookingRoomClass> bookingRoomClasses = new ArrayList<>();
 }

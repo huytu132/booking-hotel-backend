@@ -9,10 +9,12 @@ import com.example.identity_service.dto.response.IntrospectResponse;
 import com.example.identity_service.dto.response.SessionResponse;
 import com.example.identity_service.service.AuthenticationService;
 import com.example.identity_service.service.GoogleAuthService;
+import com.example.identity_service.service.VerificationTokenService;
 import com.nimbusds.jose.JOSEException;
 import lombok.AccessLevel;
 import lombok.RequiredArgsConstructor;
 import lombok.experimental.FieldDefaults;
+import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.security.oauth2.core.user.OAuth2User;
 import org.springframework.web.bind.annotation.*;
@@ -28,6 +30,7 @@ import java.util.Map;
 public class AuthenticationController {
     AuthenticationService authenticationService;
     GoogleAuthService googleAuthService;
+    VerificationTokenService verificationTokenService;
 
     @PostMapping("/login")
     ApiResponse<AuthenticationResponse> authenticate(@RequestBody AuthenticationRequest request){
@@ -76,5 +79,15 @@ public class AuthenticationController {
     public AuthenticationResponse googleLogin(@RequestBody Map<String, String> body) {
         String code = body.get("code");
         return googleAuthService.loginWithGoogle(code);
+    }
+
+    @GetMapping("/verify")
+    public ResponseEntity<String> verifyEmail(@RequestParam String token) {
+        boolean isVerified = verificationTokenService.verifyToken(token);
+        if (isVerified) {
+            return ResponseEntity.ok("Email verified successfully!");
+        } else {
+            return ResponseEntity.badRequest().body("Invalid or expired token.");
+        }
     }
 }
