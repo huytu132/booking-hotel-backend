@@ -46,6 +46,7 @@ public class PaymentController {
 
         try {
             PaymentResponse paymentResponse = processVNPayParams(params, true);
+            log.info(paymentResponse.toString());
             String redirectUrl = paymentResponse.getPaymentStatus().equals("PAID")
                     ? "http://your-frontend.com/payment/success?paymentId=" + paymentResponse.getId()
                     : "http://your-frontend.com/payment/failure?paymentId=" + paymentResponse.getId();

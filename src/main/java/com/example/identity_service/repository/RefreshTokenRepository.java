@@ -11,11 +11,6 @@ import java.util.Optional;
 @Repository
 public interface RefreshTokenRepository extends JpaRepository<RefreshToken, Long> {
     Optional<RefreshToken> findByToken(String token);
-    void deleteByUserId(Long userId); // Để xóa refresh token khi logout
-
     // Thay Optional<List<...>> thành List<...> cho đơn giản
     List<RefreshToken> findAllByUser(User user);
-
-    // Thêm phương thức để lấy token active
-    List<RefreshToken> findAllByUserAndStatus(User user, String status);
 }
