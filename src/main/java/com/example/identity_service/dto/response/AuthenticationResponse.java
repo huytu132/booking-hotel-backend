@@ -12,4 +12,7 @@ public class AuthenticationResponse {
     String token;
     String refreshToken;
     boolean authenticated;
+    private boolean newlyRegistered; // <-- mới thêm
+    private boolean verified;        // <-- để FE biết trạng thái verify
+    private String message;
 }

@@ -15,8 +15,8 @@ public interface RoomRepository extends JpaRepository<Room, Integer> {
     boolean existsByRoomNumber(String roomNumber);
     List<Room> findByRoomClassId(Integer roomClassId);
 
-    Long countByRoomStatus(RoomStatusType status);
-
+//    Long countByRoomStatus(RoomStatusType status);
+//
 //    @Query("SELECT r FROM Room r WHERE r.roomClass.id = :roomClassId " +
 //            "AND NOT EXISTS (SELECT br FROM BookingRoom br WHERE br.room.id = r.id " +
 //            "AND br.checkinDate < :checkoutDate " +

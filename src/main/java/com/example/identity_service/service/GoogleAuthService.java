@@ -53,7 +53,17 @@ public class GoogleAuthService {
 
         // 4. Kiểm tra trạng thái xác thực
         if (!user.isVerified()) {
-            throw new RuntimeException("Email not verified. Please verify your email.");
+            boolean isNew = user.getCreateAt().isAfter(LocalDateTime.now().minusMinutes(1));
+            // hoặc có thể gắn flag trong createNewUser
+
+            return AuthenticationResponse.builder()
+                    .authenticated(false)
+                    .verified(false)
+                    .newlyRegistered(isNew)
+                    .message(isNew
+                            ? "Tài khoản mới được tạo. Vui lòng kiểm tra email để xác thực trước khi đăng nhập."
+                            : "Tài khoản đã tồn tại nhưng chưa xác thực. Vui lòng xác thực email.")
+                    .build();
         }
 
         // 5. Tạo JWT
@@ -64,6 +74,9 @@ public class GoogleAuthService {
                 .token(jwt)
                 .refreshToken(refresh)
                 .authenticated(true)
+                .verified(true)
+                .newlyRegistered(false)
+                .message("Đăng nhập thành công!")
                 .build();
     }
 
