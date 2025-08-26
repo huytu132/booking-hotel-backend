@@ -1,8 +1,10 @@
 package com.example.identity_service.controller;
 
 import com.example.identity_service.dto.response.PaymentResponse;
+import com.example.identity_service.entity.Payment;
 import com.example.identity_service.service.PaymentService;
 import com.example.identity_service.service.VNPayService;
+import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.ResponseEntity;
@@ -10,6 +12,7 @@ import org.springframework.web.bind.annotation.*;
 
 import jakarta.servlet.http.HttpServletRequest;
 
+import java.io.IOException;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -28,17 +31,26 @@ public class PaymentController {
     }
 
     @GetMapping("/vnpay-return")
-    public ResponseEntity<String> paymentReturn(@RequestParam Map<String, String> params) {
+    public void handleVNPayReturn(
+            @RequestParam Map<String, String> params,
+            HttpServletResponse response) throws IOException {
+
+        // Validate chữ ký VNPay
         if (!vnPayService.validateResponse(params)) {
-            return ResponseEntity.badRequest().body("Invalid VNPay response");
+            response.sendRedirect("http://localhost:5173.com/payment/result?status=failed&reason=invalid_signature");
+            return;
         }
 
-        PaymentResponse paymentResponse = processVNPayParams(params);
+        // Xử lý thông tin VNPay gửi về và cập nhật Payment
+        PaymentResponse payment = processVNPayParams(params);
 
-        // redirect link về fe, fe get lấy paymentId rồi call api lấy status của payment để hiển th paid/failed
-        String redirectUrl = "localhost:8080/api/payment?paymentId=" + paymentResponse.getId();
-        return ResponseEntity.ok(redirectUrl);
+        // Redirect về FE kèm paymentId và status
+        String redirectUrl = "http://localhost:5173.com/payment/result"
+                + "?paymentId=" + payment.getId();
+
+        response.sendRedirect(redirectUrl);
     }
+
 
 
     @PostMapping("/vnpay-ipn")
