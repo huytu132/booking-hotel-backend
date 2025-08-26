@@ -188,9 +188,7 @@ public class BookingService {
         // Cập nhật tổng
         cartBooking.setTotalRoom(cartBooking.getTotalRoom() - bookingRoomClass.getQuantity());
         cartBooking.setBookingAmount(cartBooking.getBookingAmount().subtract(bookingRoomClass.getSubtotal()));
-
-        // Xóa booking room class
-        bookingRoomClassRepository.delete(bookingRoomClass);
+        cartBooking.getBookingRoomClasses().remove(bookingRoomClass);
         bookingRepository.save(cartBooking);
 
         return convertToCartResponse(cartBooking);
@@ -266,51 +264,6 @@ public class BookingService {
         bookingRepository.findByUserAndBookingStatus(currentUser, BookingStatus.CART)
                 .ifPresent(cartBooking -> bookingRepository.delete(cartBooking));
     }
-
-    // 6. Checkout - chuyển cart thành booking
-//    @Transactional
-//    public String checkout(HttpServletRequest request) {
-//        User currentUser = getCurrentUser();
-//
-//        Booking cartBooking = bookingRepository.findByUserAndBookingStatus(currentUser, BookingStatus.CART)
-//                .orElseThrow(() -> new AppException(ErrorCode.CART_NOT_FOUND));
-//
-//        if (cartBooking.getBookingRoomClasses().isEmpty()) {
-//            throw new AppException(ErrorCode.CART_EMPTY);
-//        }
-//
-////         Kiểm tra lại tất cả RoomClass có đủ phòng không
-//        for (BookingRoomClass bookingRoomClass : cartBooking.getBookingRoomClasses()) {
-//            if (!isRoomClassAvailable(
-//                    bookingRoomClass.getRoomClass().getId(),
-//                    bookingRoomClass.getCheckinDate(),
-//                    bookingRoomClass.getCheckoutDate(),
-//                    bookingRoomClass.getQuantity())) {
-//                log.info(bookingRoomClass.getRoomClass().getId().toString());
-//                log.info(bookingRoomClass.getQuantity()+"");
-//                throw new AppException(ErrorCode.ROOM_NOT_AVAILABLE);
-//            }
-//        }
-//
-//        // Chuyển status từ CART sang PENDING
-//        cartBooking.setBookingStatus(BookingStatus.PENDING);
-//
-//        // Cập nhật status của các booking room class
-//        for (BookingRoomClass bookingRoomClass : cartBooking.getBookingRoomClasses()) {
-//            bookingRoomClass.setStatus("PENDING");
-//        }
-//
-//        // Comment phần gọi PaymentService (dự định dùng VNPay)
-//        // paymentService.processPayment(cartBooking);
-//
-//        Booking savedBooking = bookingRepository.save(cartBooking);
-//
-//        String paymentUrl = vnPayService.createPaymentUrl(cartBooking, request);
-//
-//        return paymentUrl; // FE redirect sang VNPay
-//
-////        return bookingMapper.toResponse(savedBooking);
-//    }
 
     @Transactional
     public String checkout(HttpServletRequest request) {
@@ -421,31 +374,6 @@ public class BookingService {
         return userRepository.findByEmail(email)
                 .orElseThrow(() -> new AppException(ErrorCode.USER_NOT_EXISTED));
     }
-
-//    private boolean isRoomClassAvailable(Integer roomClassId, LocalDateTime checkinDate, LocalDateTime checkoutDate, int requestedQuantity) {
-//        RoomClass roomClass = roomClassRepository.findById(roomClassId)
-//                .orElseThrow(() -> new AppException(ErrorCode.ROOM_CLASS_NOT_FOUND));
-//
-//        List<Room> availableRooms = roomRepository.findByRoomClassAndRoomStatus(roomClass, RoomStatusType.AVAILABLE);
-//        List<BookingRoomClass> conflictingBookings = bookingRoomClassRepository.findConflictingBookings(
-//                roomClassId, checkinDate, checkoutDate);
-//        for (BookingRoomClass bookedRooms:conflictingBookings){
-//            log.info("af" + bookedRooms.getQuantity()+"");
-//        }
-//
-//        int bookedRooms = conflictingBookings.stream()
-//                .filter(conflictingBooking -> !conflictingBooking.getStatus().equals("IN_CART"))
-//                .mapToInt(BookingRoomClass::getQuantity)
-//                .sum();
-//        int totalRooms = availableRooms.size();
-//        int remainingRooms = totalRooms - bookedRooms;
-//
-//        log.info(totalRooms+"");
-//        log.info(remainingRooms+"");
-//        log.info(requestedQuantity+"");
-//
-//        return remainingRooms >= requestedQuantity;
-//    }
 
     private boolean isRoomClassAvailable(Integer roomClassId,
                                          LocalDateTime checkinDate,

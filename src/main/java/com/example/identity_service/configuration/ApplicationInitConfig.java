@@ -39,6 +39,7 @@ public class ApplicationInitConfig {
                         .password(passwordEncoder.encode("12345678"))
                         .firstName("Admin")
                         .lastName("System")
+                        .isVerified(true)
                         .build();
 
                 user.getRoles().add(adminRole);

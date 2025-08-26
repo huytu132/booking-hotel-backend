@@ -32,6 +32,9 @@ public class Booking extends BaseEntity {
     @Column(name = "booking_amount", precision = 10, scale = 2)
     private BigDecimal bookingAmount;
 
+    @Column(name = "paid_amount", precision = 10, scale = 2)
+    private BigDecimal paidAmount = BigDecimal.ZERO; // tổng đã thanh toán
+
     @Enumerated(EnumType.STRING)
     @Column(name = "booking_status", nullable = false, length = 20)
     private BookingStatus bookingStatus;

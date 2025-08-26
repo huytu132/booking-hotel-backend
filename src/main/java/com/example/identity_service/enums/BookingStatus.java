@@ -3,6 +3,7 @@ package com.example.identity_service.enums;
 public enum BookingStatus {
     CART,        // Trạng thái giỏ hàng
     PENDING,     // Đã đặt, chờ xác nhận
+    DEPOSITED,
     CONFIRMED,   // Đã xác nhận
     CHECKED_IN,  // Đã check-in
     CHECKED_OUT, // Đã check-out
