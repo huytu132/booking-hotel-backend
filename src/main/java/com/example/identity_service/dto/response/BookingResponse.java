@@ -17,6 +17,7 @@ public class BookingResponse {
     private String userFullName;
     private Integer totalRoom;
     private BigDecimal bookingAmount;
+    private BigDecimal paidAmount;
     private BookingStatus bookingStatus;
     private List<BookingRoomResponse> bookingRoomResponses;
     private LocalDateTime createAt;

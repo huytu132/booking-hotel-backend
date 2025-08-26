@@ -17,44 +17,44 @@ public class VNPayService {
 
     private final VNPayConfig vnPayConfig;
 
-    public String createPaymentUrl(long amount, String orderId, HttpServletRequest request) {
-        Map<String, String> params = vnPayConfig.getConfig();
-
-        // Thời gian tạo request
-        Calendar now = Calendar.getInstance(TimeZone.getTimeZone("Etc/GMT+7"));
-        SimpleDateFormat formatter = new SimpleDateFormat("yyyyMMddHHmmss");
-
-        String vnp_CreateDate = formatter.format(now.getTime());
-        params.put("vnp_CreateDate", vnp_CreateDate);
-
-        // Thời gian hết hạn (15 phút sau)
-        now.add(Calendar.MINUTE, 15);
-        String vnp_ExpireDate = formatter.format(now.getTime());
-        params.put("vnp_ExpireDate", vnp_ExpireDate);
-
-        // Số tiền (nhân 100 theo chuẩn VNPAY)
-        params.put("vnp_Amount", String.valueOf(amount * 100L));
-
-        // Mã tham chiếu đơn hàng
-        String ref = orderId + "-" + System.currentTimeMillis();
-        params.put("vnp_TxnRef", ref);
-
-        // Thông tin đơn hàng
-        params.put("vnp_OrderInfo", "Thanh toan don hang: " + orderId);
-
-        // IP
-        String ipAddr = VNPayUtil.getIpAddress(request);
-        params.put("vnp_IpAddr", ipAddr);
-
-        // Build query + hash
-        String queryString = VNPayUtil.createPaymentUrl(params, true);
-        String hashData = VNPayUtil.createPaymentUrl(params, false);
-        String vnpSecureHash = VNPayUtil.hmacSHA512(vnPayConfig.getSecretKey(), hashData);
-
-        queryString += "&vnp_SecureHash=" + vnpSecureHash;
-
-        return vnPayConfig.getVnp_PayUrl() + "?" + queryString;
-    }
+//    public String createPaymentUrl(long amount, String orderId, HttpServletRequest request) {
+//        Map<String, String> params = vnPayConfig.getConfig();
+//
+//        // Thời gian tạo request
+//        Calendar now = Calendar.getInstance(TimeZone.getTimeZone("Etc/GMT+7"));
+//        SimpleDateFormat formatter = new SimpleDateFormat("yyyyMMddHHmmss");
+//
+//        String vnp_CreateDate = formatter.format(now.getTime());
+//        params.put("vnp_CreateDate", vnp_CreateDate);
+//
+//        // Thời gian hết hạn (15 phút sau)
+//        now.add(Calendar.MINUTE, 15);
+//        String vnp_ExpireDate = formatter.format(now.getTime());
+//        params.put("vnp_ExpireDate", vnp_ExpireDate);
+//
+//        // Số tiền (nhân 100 theo chuẩn VNPAY)
+//        params.put("vnp_Amount", String.valueOf(amount * 100L));
+//
+//        // Mã tham chiếu đơn hàng
+//        String ref = orderId + "-" + System.currentTimeMillis();
+//        params.put("vnp_TxnRef", ref);
+//
+//        // Thông tin đơn hàng
+//        params.put("vnp_OrderInfo", "Thanh toan don hang: " + orderId);
+//
+//        // IP
+//        String ipAddr = VNPayUtil.getIpAddress(request);
+//        params.put("vnp_IpAddr", ipAddr);
+//
+//        // Build query + hash
+//        String queryString = VNPayUtil.createPaymentUrl(params, true);
+//        String hashData = VNPayUtil.createPaymentUrl(params, false);
+//        String vnpSecureHash = VNPayUtil.hmacSHA512(vnPayConfig.getSecretKey(), hashData);
+//
+//        queryString += "&vnp_SecureHash=" + vnpSecureHash;
+//
+//        return vnPayConfig.getVnp_PayUrl() + "?" + queryString;
+//    }
 
     public String createPaymentUrl(Booking booking, HttpServletRequest request) {
         Map<String, String> params = vnPayConfig.getConfig();

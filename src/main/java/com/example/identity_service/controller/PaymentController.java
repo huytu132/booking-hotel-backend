@@ -22,40 +22,24 @@ public class PaymentController {
     private final VNPayService vnPayService;
     private final PaymentService paymentService;
 
-    @GetMapping("/vnpay")
-    public ResponseEntity<String> createPayment(@RequestParam("amount") long amount,
-                                                @RequestParam("orderId") String orderId,
-                                                HttpServletRequest request) {
-        try {
-            String url = vnPayService.createPaymentUrl(amount, orderId, request);
-            return ResponseEntity.ok(url);
-        } catch (Exception e) {
-            log.error("Error creating payment URL for orderId: {}", orderId, e);
-            return ResponseEntity.badRequest().body("Error creating payment URL: " + e.getMessage());
-        }
+    @GetMapping("/{id}")
+    public PaymentResponse getPaymentById(@PathVariable Integer id) {
+        return paymentService.getPaymentById(id);
     }
 
     @GetMapping("/vnpay-return")
     public ResponseEntity<String> paymentReturn(@RequestParam Map<String, String> params) {
-        log.info("VNPay return params: {}", params);
-
         if (!vnPayService.validateResponse(params)) {
-            log.warn("Invalid VNPay response checksum");
-            return ResponseEntity.badRequest().body("Invalid VNPay response (checksum failed)");
+            return ResponseEntity.badRequest().body("Invalid VNPay response");
         }
 
-        try {
-            PaymentResponse paymentResponse = processVNPayParams(params, true);
-            log.info(paymentResponse.toString());
-            String redirectUrl = paymentResponse.getPaymentStatus().equals("PAID")
-                    ? "http://your-frontend.com/payment/success?paymentId=" + paymentResponse.getId()
-                    : "http://your-frontend.com/payment/failure?paymentId=" + paymentResponse.getId();
-            return ResponseEntity.ok(redirectUrl);
-        } catch (IllegalArgumentException e) {
-            log.error("Error processing VNPay return: {}", e.getMessage());
-            return ResponseEntity.badRequest().body("Error processing VNPay response: " + e.getMessage());
-        }
+        PaymentResponse paymentResponse = processVNPayParams(params);
+
+        // redirect link về fe, fe get lấy paymentId rồi call api lấy status của payment để hiển th paid/failed
+        String redirectUrl = "localhost:8080/api/payment?paymentId=" + paymentResponse.getId();
+        return ResponseEntity.ok(redirectUrl);
     }
+
 
     @PostMapping("/vnpay-ipn")
     public ResponseEntity<Map<String, String>> handleIPN(@RequestParam Map<String, String> params) {
@@ -69,7 +53,7 @@ public class PaymentController {
         }
 
         try {
-            processVNPayParams(params, false);
+            processVNPayParams(params);
             response.put("RspCode", "00");
             response.put("Message", "Confirm Success");
             return ResponseEntity.ok(response);
@@ -81,7 +65,7 @@ public class PaymentController {
         }
     }
 
-    private PaymentResponse processVNPayParams(Map<String, String> params, boolean isReturn) {
+    private PaymentResponse processVNPayParams(Map<String, String> params) {
         String orderId = params.get("vnp_TxnRef");
         String responseCode = params.get("vnp_ResponseCode");
         String transactionNo = params.get("vnp_TransactionNo");
@@ -93,6 +77,6 @@ public class PaymentController {
             throw new IllegalArgumentException("Invalid amount format");
         }
 
-        return paymentService.processVNPayResponse(orderId, responseCode, transactionNo, amount, isReturn);
+        return paymentService.processVNPayResponse(orderId, responseCode, transactionNo, amount);
     }
 }

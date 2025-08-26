@@ -63,6 +63,14 @@ public class AuthenticationService {
             throw new AppException(ErrorCode.UNAUTHENTICATED);
         }
 
+        if (!user.isVerified()){
+            return AuthenticationResponse.builder()
+                    .authenticated(false)
+                    .verified(false)
+                    .message("Tài khoản đã tồn tại nhưng chưa xác thực. Vui lòng xác thực email.")
+                    .build();
+        }
+
         var accessToken = generateToken(user);
         var refreshToken = generateRefreshToken(user);
 
@@ -70,6 +78,7 @@ public class AuthenticationService {
                 .token(accessToken)
                 .refreshToken(refreshToken.getToken())
                 .authenticated(true)
+                .verified(user.isVerified())
                 .build();
     }
 

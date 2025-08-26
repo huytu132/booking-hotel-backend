@@ -44,4 +44,8 @@ public interface PaymentRepository extends JpaRepository<Payment, Integer> {
             "AND p.paymentStatus = :status")
     List<Payment> findByBookingIdAndStatus(@Param("bookingId") Integer bookingId,
                                            @Param("status") PaymentStatus status);
+
+    @Query("SELECT COALESCE(SUM(p.paymentAmount),0) FROM Payment p " +
+            "WHERE p.booking.id = :bookingId AND p.paymentStatus = 'PAID'")
+    BigDecimal sumPaidAmountByBooking(@Param("bookingId") Integer bookingId);
 }
