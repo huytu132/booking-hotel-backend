@@ -5,11 +5,9 @@ import com.example.identity_service.dto.response.RoomResponse;
 import com.example.identity_service.service.RoomService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
-import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
-import java.time.LocalDateTime;
 import java.util.List;
 
 @RestController
@@ -38,7 +36,8 @@ public class RoomController {
     }
 
     @PutMapping("/{id}")
-    public ResponseEntity<RoomResponse> updateRoom(@PathVariable Integer id, @Valid @RequestBody RoomRequest requestDTO) {
+    public ResponseEntity<RoomResponse> updateRoom(@PathVariable Integer id,
+            @Valid @RequestBody RoomRequest requestDTO) {
         RoomResponse responseDTO = roomService.updateRoom(id, requestDTO);
         return ResponseEntity.ok(responseDTO);
     }
@@ -49,12 +48,15 @@ public class RoomController {
         return ResponseEntity.noContent().build();
     }
 
-//    @GetMapping("/available")
-//    public ResponseEntity<List<RoomResponse>> findAvailableRooms(
-//            @RequestParam(required = false) Integer roomClassId,
-//            @RequestParam @DateTimeFormat(pattern = "dd-MM-yyyy HH:mm:ss") LocalDateTime checkinDate,
-//            @RequestParam @DateTimeFormat(pattern = "dd-MM-yyyy HH:mm:ss") LocalDateTime checkoutDate) {
-//        List<RoomResponse> responseDTOs = roomService.findAvailableRooms(roomClassId, checkinDate, checkoutDate);
-//        return ResponseEntity.ok(responseDTOs);
-//    }
+    // @GetMapping("/available")
+    // public ResponseEntity<List<RoomResponse>> findAvailableRooms(
+    // @RequestParam(required = false) Integer roomClassId,
+    // @RequestParam @DateTimeFormat(pattern = "dd-MM-yyyy HH:mm:ss") LocalDateTime
+    // checkinDate,
+    // @RequestParam @DateTimeFormat(pattern = "dd-MM-yyyy HH:mm:ss") LocalDateTime
+    // checkoutDate) {
+    // List<RoomResponse> responseDTOs = roomService.findAvailableRooms(roomClassId,
+    // checkinDate, checkoutDate);
+    // return ResponseEntity.ok(responseDTOs);
+    // }
 }

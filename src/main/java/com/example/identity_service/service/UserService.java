@@ -4,7 +4,6 @@ import com.example.identity_service.dto.request.UserCreationRequest;
 import com.example.identity_service.dto.request.UserUpdateRequest;
 import com.example.identity_service.dto.response.UserResponse;
 import com.example.identity_service.entity.User;
-import com.example.identity_service.enums.EnumRole;
 import com.example.identity_service.exception.AppException;
 import com.example.identity_service.exception.ErrorCode;
 import com.example.identity_service.mapper.UserMapper;
@@ -78,8 +77,7 @@ public class UserService {
     public UserResponse getUser(String userId) {
         return userMapper.toUserResponse(
                 userRepository.findById(userId)
-                        .orElseThrow(() -> new AppException(ErrorCode.USER_NOT_EXISTED))
-        );
+                        .orElseThrow(() -> new AppException(ErrorCode.USER_NOT_EXISTED)));
     }
 
     public UserResponse updateUser(String userId, UserUpdateRequest request) {

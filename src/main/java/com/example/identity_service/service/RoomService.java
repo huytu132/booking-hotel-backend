@@ -5,14 +5,12 @@ import com.example.identity_service.dto.response.RoomResponse;
 import com.example.identity_service.entity.Room;
 import com.example.identity_service.entity.RoomClass;
 import com.example.identity_service.mapper.RoomMapper;
-import com.example.identity_service.repository.BookingRoomClassRepository;
 import com.example.identity_service.repository.RoomClassRepository;
 import com.example.identity_service.repository.RoomRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.time.LocalDateTime;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -22,7 +20,6 @@ public class RoomService {
 
     private final RoomRepository roomRepository;
     private final RoomClassRepository roomClassRepository;
-    private final BookingRoomClassRepository bookingRoomClassRepository;
     private final RoomMapper roomMapper;
 
     @Transactional
@@ -34,7 +31,8 @@ public class RoomService {
 
         // Kiểm tra roomClassId
         RoomClass roomClass = roomClassRepository.findById(requestDTO.getRoomClassId())
-                .orElseThrow(() -> new RuntimeException("Room class not found with id: " + requestDTO.getRoomClassId()));
+                .orElseThrow(
+                        () -> new RuntimeException("Room class not found with id: " + requestDTO.getRoomClassId()));
 
         Room room = roomMapper.toEntity(requestDTO);
         room.setRoomClass(roomClass);
@@ -67,7 +65,8 @@ public class RoomService {
 
         // Kiểm tra roomClassId
         RoomClass roomClass = roomClassRepository.findById(requestDTO.getRoomClassId())
-                .orElseThrow(() -> new RuntimeException("Room class not found with id: " + requestDTO.getRoomClassId()));
+                .orElseThrow(
+                        () -> new RuntimeException("Room class not found with id: " + requestDTO.getRoomClassId()));
 
         roomMapper.updateEntityFromRequest(requestDTO, room);
         room.setRoomClass(roomClass);
@@ -88,17 +87,21 @@ public class RoomService {
         roomRepository.deleteById(id);
     }
 
-//    public List<RoomResponse> findAvailableRooms(Integer roomClassId, LocalDateTime checkinDate, LocalDateTime checkoutDate) {
-//        if (checkinDate.isAfter(checkoutDate) || checkinDate.isBefore(LocalDateTime.now())) {
-//            throw new RuntimeException("Invalid date range: check-in must be before check-out and not in the past");
-//        }
-//
-//        List<Room> availableRooms = roomClassId != null
-//                ? roomRepository.findAvailableRoomsByRoomClassId(roomClassId, checkinDate, checkoutDate)
-//                : roomRepository.findAllAvailableRooms(checkinDate, checkoutDate);
-//
-//        return availableRooms.stream()
-//                .map(roomMapper::toResponse)
-//                .collect(Collectors.toList());
-//    }
+    // public List<RoomResponse> findAvailableRooms(Integer roomClassId,
+    // LocalDateTime checkinDate, LocalDateTime checkoutDate) {
+    // if (checkinDate.isAfter(checkoutDate) ||
+    // checkinDate.isBefore(LocalDateTime.now())) {
+    // throw new RuntimeException("Invalid date range: check-in must be before
+    // check-out and not in the past");
+    // }
+    //
+    // List<Room> availableRooms = roomClassId != null
+    // ? roomRepository.findAvailableRoomsByRoomClassId(roomClassId, checkinDate,
+    // checkoutDate)
+    // : roomRepository.findAllAvailableRooms(checkinDate, checkoutDate);
+    //
+    // return availableRooms.stream()
+    // .map(roomMapper::toResponse)
+    // .collect(Collectors.toList());
+    // }
 }

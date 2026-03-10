@@ -1,7 +1,6 @@
 package com.example.identity_service.controller;
 
 import com.example.identity_service.dto.response.PaymentResponse;
-import com.example.identity_service.entity.Payment;
 import com.example.identity_service.service.PaymentService;
 import com.example.identity_service.service.VNPayService;
 import jakarta.servlet.http.HttpServletResponse;
@@ -9,8 +8,6 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
-
-import jakarta.servlet.http.HttpServletRequest;
 
 import java.io.IOException;
 import java.util.HashMap;
@@ -50,8 +47,6 @@ public class PaymentController {
 
         response.sendRedirect(redirectUrl);
     }
-
-
 
     @PostMapping("/vnpay-ipn")
     public ResponseEntity<Map<String, String>> handleIPN(@RequestParam Map<String, String> params) {

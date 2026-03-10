@@ -26,7 +26,8 @@ public enum ErrorCode {
     BOOKING_NOT_FOUND(1018, "Booking not found", HttpStatus.NOT_FOUND),
     UNAUTHORIZED(1019, "Unauthorized access", HttpStatus.UNAUTHORIZED),
     CANNOT_CANCEL_BOOKING(1020, "Cannot cancel booking", HttpStatus.BAD_REQUEST),
-    INVALID_STATE(1021, "Trạng thái không hợp lệ", HttpStatus.BAD_REQUEST);
+    INVALID_STATE(1021, "Trạng thái không hợp lệ", HttpStatus.BAD_REQUEST),
+    NOTIFICATION_NOT_FOUND(1022, "Notification not found", HttpStatus.NOT_FOUND);
 
     ErrorCode(int code, String message, HttpStatus httpStatusCode) {
         this.code = code;

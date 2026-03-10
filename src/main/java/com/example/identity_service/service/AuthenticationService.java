@@ -7,13 +7,10 @@ import com.example.identity_service.dto.response.AuthenticationResponse;
 import com.example.identity_service.dto.response.IntrospectResponse;
 import com.example.identity_service.dto.response.SessionResponse;
 import com.example.identity_service.entity.RefreshToken;
-import com.example.identity_service.entity.Role;
 import com.example.identity_service.entity.User;
-import com.example.identity_service.enums.EnumRole;
 import com.example.identity_service.exception.AppException;
 import com.example.identity_service.exception.ErrorCode;
 import com.example.identity_service.repository.RefreshTokenRepository;
-import com.example.identity_service.repository.RoleRepository;
 import com.example.identity_service.repository.UserRepository;
 import com.nimbusds.jose.*;
 import com.nimbusds.jose.crypto.MACSigner;
@@ -27,7 +24,6 @@ import lombok.experimental.FieldDefaults;
 import lombok.experimental.NonFinal;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.security.crypto.password.PasswordEncoder;
-import org.springframework.security.oauth2.core.user.OAuth2User;
 import org.springframework.stereotype.Service;
 import org.springframework.util.CollectionUtils;
 import org.springframework.web.context.request.RequestContextHolder;
@@ -47,7 +43,6 @@ public class AuthenticationService {
     UserRepository userRepository;
     RefreshTokenRepository refreshTokenRepository;
     PasswordEncoder passwordEncoder;
-    RoleRepository roleRepository;
 
     @NonFinal
     @Value("${jwt.signerKey}")
@@ -63,7 +58,7 @@ public class AuthenticationService {
             throw new AppException(ErrorCode.UNAUTHENTICATED);
         }
 
-        if (!user.isVerified()){
+        if (!user.isVerified()) {
             return AuthenticationResponse.builder()
                     .authenticated(false)
                     .verified(false)
@@ -113,7 +108,8 @@ public class AuthenticationService {
         Instant expiresAt = Instant.now().plus(7, ChronoUnit.DAYS);
 
         // Lấy thông tin thiết bị từ request
-        HttpServletRequest request = ((ServletRequestAttributes) RequestContextHolder.getRequestAttributes()).getRequest();
+        HttpServletRequest request = ((ServletRequestAttributes) RequestContextHolder.getRequestAttributes())
+                .getRequest();
         String userAgent = request.getHeader("User-Agent");
         String ipAddress = request.getRemoteAddr();
         String deviceInfo = userAgent != null ? userAgent + " (IP: " + ipAddress + ")" : "Unknown Device";

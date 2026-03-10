@@ -1,13 +1,10 @@
 package com.example.identity_service.dto.request;
 
-import jakarta.persistence.Column;
 import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.Size;
 import lombok.*;
 import lombok.experimental.FieldDefaults;
-import org.hibernate.annotations.Nationalized;
 
-import java.time.LocalDate;
 import java.util.List;
 
 @Data

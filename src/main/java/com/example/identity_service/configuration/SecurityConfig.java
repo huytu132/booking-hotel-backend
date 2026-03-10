@@ -35,24 +35,15 @@ public class SecurityConfig {
     @Value("${jwt.signerKey}")
     private String SIGNER_KEY;
 
-    // Filter chain cho OAuth2 Login (browser-based)
+    // Filter chain cho OAuth2 Login (browser-based) + WebSocket
     @Bean
     @Order(1)
     public SecurityFilterChain oauth2FilterChain(HttpSecurity http) throws Exception {
         http
-                .securityMatcher("/auth/**", "/login/**", "/oauth2/**")
+                .securityMatcher("/auth/**", "/login/**", "/oauth2/**", "/ws/**")
                 .authorizeHttpRequests(auth -> auth
-                        .requestMatchers("/auth/**", "/login/**", "/oauth2/**").permitAll()
+                        .requestMatchers("/auth/**", "/login/**", "/oauth2/**", "/ws/**").permitAll()
                 )
-//                .oauth2Login(oauth2 -> oauth2
-//                        .loginPage("/auth/login")
-//                        .successHandler(oAuth2AuthenticationSuccessHandler())
-//                        .failureHandler(oAuth2AuthenticationFailureHandler())
-//                )
-//                // Enable session cho OAuth2
-//                .sessionManagement(session -> session
-//                        .sessionCreationPolicy(org.springframework.security.config.http.SessionCreationPolicy.IF_REQUIRED)
-//                )
                 .csrf(AbstractHttpConfigurer::disable);
 
         return http.build();
