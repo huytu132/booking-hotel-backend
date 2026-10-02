@@ -1,7 +1,6 @@
 package com.example.identity_service.service.cache;
 
 import lombok.RequiredArgsConstructor;
-import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.stereotype.Service;
 
@@ -12,7 +11,6 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
-import java.util.concurrent.TimeUnit;
 
 @Service
 @RequiredArgsConstructor
@@ -26,15 +24,17 @@ public class BookingCacheService {
     private String holdKey(String holdId) {
         return "booking:hold:" + holdId;
     }
+
     private String indexKey(Integer roomClassId) {
         return "booking:index:" + roomClassId;
     }
+
     private String bookingMapKey(Integer bookingId) {
         return "booking:map:" + bookingId;
     }
 
     private boolean isOverlap(LocalDateTime aStart, LocalDateTime aEnd,
-                              LocalDateTime bStart, LocalDateTime bEnd) {
+            LocalDateTime bStart, LocalDateTime bEnd) {
         // Overlap khi aStart < bEnd && aEnd > bStart
         return aStart.isBefore(bEnd) && aEnd.isAfter(bStart);
     }
@@ -43,10 +43,10 @@ public class BookingCacheService {
      * Tạo hold cho 1 booking-roomClass, trả về holdId
      */
     public String holdRoomsForBooking(Integer bookingId,
-                                      Integer roomClassId,
-                                      LocalDateTime checkin,
-                                      LocalDateTime checkout,
-                                      int quantity) {
+            Integer roomClassId,
+            LocalDateTime checkin,
+            LocalDateTime checkout,
+            int quantity) {
         String holdId = UUID.randomUUID().toString();
         long now = System.currentTimeMillis();
         long expiresAt = now + HOLD_TTL.toMillis();
@@ -78,8 +78,8 @@ public class BookingCacheService {
      * và OVERLAP với [checkin, checkout)
      */
     public int getHoldingOverlap(Integer roomClassId,
-                                 LocalDateTime checkin,
-                                 LocalDateTime checkout) {
+            LocalDateTime checkin,
+            LocalDateTime checkout) {
         String idxKey = indexKey(roomClassId);
         long nowEpoch = System.currentTimeMillis();
 
@@ -87,7 +87,8 @@ public class BookingCacheService {
         Set<String> activeHoldIds = redis.opsForZSet()
                 .rangeByScore(idxKey, nowEpoch, Double.POSITIVE_INFINITY);
 
-        if (activeHoldIds == null || activeHoldIds.isEmpty()) return 0;
+        if (activeHoldIds == null || activeHoldIds.isEmpty())
+            return 0;
 
         int sum = 0;
         for (String holdId : activeHoldIds) {
@@ -98,7 +99,7 @@ public class BookingCacheService {
                 continue;
             }
             try {
-                LocalDateTime cIn  = LocalDateTime.parse((String) h.get("checkin"), ISO);
+                LocalDateTime cIn = LocalDateTime.parse((String) h.get("checkin"), ISO);
                 LocalDateTime cOut = LocalDateTime.parse((String) h.get("checkout"), ISO);
                 int qty = Integer.parseInt((String) h.get("quantity"));
                 if (isOverlap(checkin, checkout, cIn, cOut)) {
@@ -134,9 +135,9 @@ public class BookingCacheService {
         String mapKey = bookingMapKey(bookingId);
         Set<String> ids = redis.opsForSet().members(mapKey);
         if (ids != null) {
-            for (String id : ids) releaseHold(id);
+            for (String id : ids)
+                releaseHold(id);
         }
         redis.delete(mapKey);
     }
 }
-

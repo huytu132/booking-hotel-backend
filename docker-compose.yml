@@ -1,0 +1,119 @@
+version: '3.8'
+
+services:
+  # ===== MySQL =====
+  mysql:
+    image: mysql:8.0
+    container_name: booking_mysql
+    restart: unless-stopped
+    environment:
+      MYSQL_ROOT_PASSWORD: root
+      MYSQL_DATABASE: booking_hotel
+    ports:
+      - "3307:3306"
+    volumes:
+      - mysql_data:/var/lib/mysql
+    networks:
+      - booking_network
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-u", "root", "-proot"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
+
+  # ===== Redis =====
+  redis:
+    image: redis:7.2-alpine
+    container_name: booking_redis
+    restart: unless-stopped
+    command: redis-server --requirepass mysecret
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    networks:
+      - booking_network
+    healthcheck:
+      test: ["CMD", "redis-cli", "-a", "mysecret", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # ===== RabbitMQ =====
+  rabbitmq:
+    image: rabbitmq:3.13-management-alpine
+    container_name: booking_rabbitmq
+    restart: unless-stopped
+    environment:
+      RABBITMQ_DEFAULT_USER: guest
+      RABBITMQ_DEFAULT_PASS: guest
+    ports:
+      - "5672:5672"    # AMQP
+      - "15672:15672"  # Management UI
+    volumes:
+      - rabbitmq_data:/var/lib/rabbitmq
+    networks:
+      - booking_network
+    healthcheck:
+      test: ["CMD", "rabbitmq-diagnostics", "check_port_connectivity"]
+      interval: 15s
+      timeout: 10s
+      retries: 5
+
+  # ===== Identity Service =====
+  identity-service:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: identity_service
+    depends_on:
+      mysql:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
+    ports:
+      - "8080:8080"
+    environment:
+      # ---------- Database ----------
+      SPRING_DATASOURCE_URL: jdbc:mysql://mysql:3306/booking_hotel
+      SPRING_DATASOURCE_USERNAME: root
+      SPRING_DATASOURCE_PASSWORD: root
+
+      # ---------- Redis ----------
+      SPRING_REDIS_HOST: redis
+      SPRING_REDIS_PORT: 6379
+      SPRING_REDIS_PASSWORD: mysecret
+
+      # ---------- RabbitMQ ----------
+      SPRING_RABBITMQ_HOST: rabbitmq
+      SPRING_RABBITMQ_PORT: 5672
+      SPRING_RABBITMQ_USERNAME: guest
+      SPRING_RABBITMQ_PASSWORD: guest
+
+      # ---------- Google OAuth2 ----------
+      GOOGLE_CLIENT_ID: ${GOOGLE_CLIENT_ID}
+      GOOGLE_CLIENT_SECRET: ${GOOGLE_CLIENT_SECRET}
+      GOOGLE_REDIRECT_URI: ${GOOGLE_REDIRECT_URI}
+
+      # ---------- Mail ----------
+      MAIL_USERNAME: ${MAIL_USERNAME}
+      MAIL_PASSWORD: ${MAIL_PASSWORD}
+
+      # ---------- JWT ----------
+      JWT_SIGNERKEY: ${JWT_SIGNERKEY:-u+h0XELZz8txv/9muTpovHkpw7w0bA4lAqATGyy9tgsoIHW2CSzXpz5PW4IPhcay}
+    env_file:
+      - .env
+    networks:
+      - booking_network
+
+volumes:
+  mysql_data:
+  redis_data:
+  rabbitmq_data:
+
+networks:
+  booking_network:
+    driver: bridge

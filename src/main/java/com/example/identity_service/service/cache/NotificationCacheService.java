@@ -1,13 +1,11 @@
 package com.example.identity_service.service.cache;
 
 import lombok.RequiredArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.stereotype.Service;
 
 @Service
 @RequiredArgsConstructor
-@Slf4j
 public class NotificationCacheService {
 
     private final StringRedisTemplate redis;
@@ -42,7 +40,8 @@ public class NotificationCacheService {
      */
     public Long getUnreadCount(int userId) {
         String val = redis.opsForValue().get(unreadKey(userId));
-        if (val == null) return null;
+        if (val == null)
+            return null;
         try {
             return Long.parseLong(val);
         } catch (NumberFormatException e) {

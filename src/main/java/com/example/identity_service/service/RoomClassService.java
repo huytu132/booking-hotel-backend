@@ -27,6 +27,12 @@ public class RoomClassService {
     private final RoomClassMapper roomClassMapper;
     private final RoomRepository roomRepository;
 
+    public List<RoomClassResponse> getAllRoomClasses() {
+        return roomClassRepository.findAll().stream()
+                .map(roomClassMapper::toResponseDTO)
+                .collect(Collectors.toList());
+    }
+
     @Transactional
     public RoomClassResponse createRoomClass(RoomClassRequest requestDTO) {
         // Kiểm tra trùng lặp roomClassName trong hotel

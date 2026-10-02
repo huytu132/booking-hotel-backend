@@ -14,8 +14,4 @@ import java.time.LocalDateTime;
 public class FeatureResponse {
     private Integer id;
     private String featureName;
-    private LocalDateTime createAt;
-    private String createBy;
-    private LocalDateTime updateAt;
-    private String updateBy;
 }
